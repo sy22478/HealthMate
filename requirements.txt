@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+sqlalchemy
+psycopg2-binary
+openai
+pinecone-client
+langchain
+streamlit
+python-jose
+passlib
+bcrypt
+python-multipart
+pydantic-settings
+python-dotenv
+pytest 
