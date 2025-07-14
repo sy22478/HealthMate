@@ -38,6 +38,8 @@ def authenticate(email: str, password: str):
         token = response.json()["access_token"]
         st.session_state.authenticated = True
         st.session_state.token = token
+        # Fetch chat history after login
+        st.session_state.chat_history = fetch_history()
         return True
     return False
 
@@ -68,6 +70,14 @@ def send_message(message: str):
         return response.json()["response"]
     return "Error: Could not process message"
 
+# Fetch conversation history from backend
+def fetch_history():
+    headers = {"Authorization": f"Bearer {st.session_state.token}"}
+    response = requests.get("http://localhost:8000/chat/history", headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    return []
+
 # Main UI
 def main():
     st.sidebar.markdown(PRIVACY_NOTICE)
@@ -90,6 +100,7 @@ def main():
                     if response.status_code == 200:
                         st.success("Registration successful! Please log in.")
                         st.session_state.show_register = False
+                        st.session_state.chat_history = []  # Clear chat history after registration
                     else:
                         try:
                             error = response.json().get("detail", "Registration failed.")

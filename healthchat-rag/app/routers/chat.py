@@ -9,6 +9,7 @@ from jose import jwt, JWTError
 from pydantic import BaseModel
 import json
 import openai
+from typing import List
 
 router = APIRouter()
 security = HTTPBearer()
@@ -70,4 +71,28 @@ async def chat_message(data: ChatMessage, user: User = Depends(get_current_user)
     )
     db.add(new_convo)
     db.commit()
-    return {"response": response + DISCLAIMER} 
+    return {"response": response + DISCLAIMER}
+
+@router.get("/history", response_model=List[dict])
+async def get_history(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    history = (
+        db.query(Conversation)
+        .filter(Conversation.user_id == user.id)
+        .order_by(Conversation.timestamp.asc())
+        .all()
+    )
+    # Return as list of dicts for frontend
+    return [
+        {
+            "role": "user",
+            "content": convo.message,
+            "timestamp": convo.timestamp.isoformat()
+        }
+        if i % 2 == 0 else
+        {
+            "role": "assistant",
+            "content": convo.response,
+            "timestamp": convo.timestamp.isoformat()
+        }
+        for i, convo in enumerate(history)
+    ] 
