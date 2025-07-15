@@ -1,5 +1,5 @@
 from pinecone import Pinecone
-from langchain_community.embeddings import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from typing import List, Dict
 
