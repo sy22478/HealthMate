@@ -1,0 +1,29 @@
+2025-07-15T05:39:31.754539 | user=sonu.yadav19997@gmail.com | event=login_failure | details=Invalid credentials
+2025-07-15T05:39:37.530516 | user=sonu.yadav19997@gmail.com | event=login_failure | details=Invalid credentials
+2025-07-15T05:40:36.131032 | user=sonu.yadav19997@gmail.com | event=login_failure | details=Invalid credentials
+2025-07-15T05:41:38.238006 | user=sonu.yadav19997@gmail.com | event=register_success | details=User registered successfully
+2025-07-15T05:41:48.136456 | user=sonu.yadav19997@gmail.com | event=login_failure | details=Invalid credentials
+2025-07-15T05:49:41.302983 | user=sonu.yadav19997@gmail.com | event=register_success | details=User registered successfully
+2025-07-15T05:49:48.051147 | user=sonu.yadav19997@gmail.com | event=login_success | details=User logged in successfully
+2025-07-15T05:49:48.237612 | user=sonu.yadav19997@gmail.com | event=chat_history_access | details=User accessed chat history, 0 messages
+2025-07-15T05:50:25.754028 | user=sonu.yadav19997@gmail.com | event=chat_message | details=User sent message: What conditions do I have?
+2025-07-15T05:50:59.225519 | user=sonu.yadav19997@gmail.com | event=chat_message | details=User sent message: What conditions do I have in my profile?
+2025-07-15T05:54:55.686495 | user=sonu.yadav19997@gmail.com | event=login_success | details=User logged in successfully
+2025-07-15T05:54:55.886129 | user=sonu.yadav19997@gmail.com | event=chat_history_access | details=User accessed chat history, 2 messages
+2025-07-15T05:55:10.879433 | user=sonu.yadav19997@gmail.com | event=chat_message | details=User sent message: What conditions do I have?
+2025-07-15T06:06:12.558001 | user=sonu.yadav19997@gmail.com | event=login_failure | details=Invalid credentials
+2025-07-15T06:06:39.578491 | user=sonu.yadav19997@gmail.com | event=register_success | details=User registered successfully
+2025-07-15T06:06:45.544992 | user=sonu.yadav19997@gmail.com | event=login_success | details=User logged in successfully
+2025-07-15T06:06:45.726000 | user=sonu.yadav19997@gmail.com | event=chat_history_access | details=User accessed chat history, 0 messages
+2025-07-15T06:07:01.636399 | user=sonu.yadav19997@gmail.com | event=chat_message | details=User sent message: What conditions do I have?
+2025-07-15T06:12:03.888349 | user=sonu.yadav19997@gmail.com | event=login_success | details=User logged in successfully
+2025-07-15T06:12:04.081931 | user=sonu.yadav19997@gmail.com | event=chat_history_access | details=User accessed chat history, 1 messages
+2025-07-15T06:12:19.344330 | user=sonu.yadav19997@gmail.com | event=chat_message | details=User sent message: What conditions do I have?
+2025-07-15T06:14:22.748475 | user=sonu.yadav19997@gmail.com | event=register_success | details=User registered successfully
+2025-07-15T06:14:30.278746 | user=sonu.yadav19997@gmail.com | event=login_success | details=User logged in successfully
+2025-07-15T06:14:30.462778 | user=sonu.yadav19997@gmail.com | event=chat_history_access | details=User accessed chat history, 0 messages
+2025-07-15T06:14:43.270400 | user=sonu.yadav19997@gmail.com | event=chat_message | details=User sent message: What conditions do I have?
+2025-07-15T06:15:14.279511 | user=sonu.yadav19997@gmail.com | event=chat_message | details=User sent message: How can I manage my high cholesterol?
+2025-07-15T06:15:46.099270 | user=sonu.yadav19997@gmail.com | event=chat_message | details=User sent message: How can I manage the symptoms of ADHD?
+2025-07-15T06:16:00.588837 | user=sonu.yadav19997@gmail.com | event=chat_message | details=User sent message: I am getting chest pains. What should I do?
+2025-07-15T06:16:31.454534 | user=sonu.yadav19997@gmail.com | event=chat_message | details=User sent message: I sprained my ankle. What should I do?
