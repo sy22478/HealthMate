@@ -7,7 +7,6 @@ class Settings(BaseSettings):
     pinecone_index_name: str
     postgres_uri: str
     secret_key: str
-    encryption_key: str
 
     class Config:
         env_file = ".env"

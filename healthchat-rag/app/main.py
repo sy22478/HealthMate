@@ -1,5 +1,3 @@
-from dotenv import load_dotenv
-load_dotenv()
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,7 +6,6 @@ from app.routers import auth_router, chat_router, health_router
 from app.services.vector_store import VectorStore
 from app.services.knowledge_base import MedicalKnowledgeBase
 from app.config import settings
-from app.utils.encryption import EncryptionManager
 
 app = FastAPI(title="HealthChat RAG API", version="1.0.0")
 
@@ -31,8 +28,6 @@ def startup_event():
     knowledge_base = MedicalKnowledgeBase(vector_store)
     knowledge_base.load_medical_sources()
     app.state.knowledge_base = knowledge_base
-    # Initialize encryption manager
-    app.state.encryption_manager = EncryptionManager(settings.encryption_key)
 
 # Include routers
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
