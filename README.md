@@ -65,3 +65,13 @@ streamlit run frontend/streamlit_app.py
 ---
 
 For detailed development steps, see `Context.md`. 
+
+## Running Tests with Coverage
+
+To run all tests and see a code coverage report locally:
+
+```bash
+pytest --cov=healthchat-rag/app --cov-report=term-missing healthchat-rag/tests/
+```
+
+Coverage is also reported automatically in CI (see the Actions tab on GitHub). 

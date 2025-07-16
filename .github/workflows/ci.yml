@@ -26,4 +26,10 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          pytest healthchat-rag/tests/ --cov=healthchat-rag/app --cov-report=term-missing 
+          pytest healthchat-rag/tests/ --cov=healthchat-rag/app --cov-report=term-missing --cov-report=xml
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml 
