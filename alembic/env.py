@@ -8,7 +8,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from app.models.user import Base
 
-db_url = "postgresql+psycopg2://neondb_owner:***REMOVED***@ep-lucky-bonus-ae6o3q2d-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require"
+db_url = "postgresql+psycopg2://neondb_owner:npg_XKH0NeODJPz4@ep-lucky-bonus-ae6o3q2d-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require"
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
