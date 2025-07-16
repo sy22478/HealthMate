@@ -100,14 +100,26 @@ class MedicalKnowledgeBase:
     
     def get_relevant_context(self, query: str, user_profile: Dict) -> str:
         """Get relevant medical context for user query"""
-        # Enhance query with user medical conditions
+        # Enhance query with user medical conditions and synonyms
         enhanced_query = f"{query} {user_profile.get('medical_conditions', '')}"
-        
+
+        # Simple synonym expansion (could be replaced with a more robust NLP approach)
+        synonyms = {
+            "heart attack": ["myocardial infarction", "cardiac arrest"],
+            "stroke": ["cerebrovascular accident", "brain attack"],
+            "high blood pressure": ["hypertension"],
+            "diabetes": ["high blood sugar", "hyperglycemia"],
+            "cancer": ["malignancy", "tumor"]
+        }
+        for term, syns in synonyms.items():
+            if term in query.lower():
+                enhanced_query += " " + " ".join(syns)
+
         results = self.vector_store.similarity_search(enhanced_query)
-        
+
         context = "Relevant medical information:\n"
         for result in results:
             context += f"Source: {result['source']}\n"
             context += f"Content: {result['text']}\n\n"
-        
+
         return context 
