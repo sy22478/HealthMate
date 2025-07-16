@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, ForeignKey
 from datetime import datetime
-from app.database import Base
+from app.base import Base
 
 class User(Base):
     __tablename__ = "users"
@@ -24,3 +24,4 @@ class Conversation(Base):
     response = Column(Text)
     timestamp = Column(DateTime, default=datetime.utcnow)
     context_used = Column(Text)  # RAG sources 
+    feedback = Column(String, nullable=True)  # 'up', 'down', or None 

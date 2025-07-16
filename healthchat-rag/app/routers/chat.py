@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Body
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -9,7 +9,7 @@ from jose import jwt, JWTError
 from pydantic import BaseModel
 import json
 import openai
-from typing import List
+from typing import List, Optional
 
 router = APIRouter()
 security = HTTPBearer()
@@ -19,6 +19,10 @@ DISCLAIMER = "\n\n**Disclaimer:** This response is for informational purposes on
 
 class ChatMessage(BaseModel):
     message: str
+
+class FeedbackRequest(BaseModel):
+    conversation_id: int
+    feedback: str  # 'up' or 'down'
 
 # Helper to get user from JWT
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)):
@@ -56,8 +60,22 @@ async def chat_message(data: ChatMessage, user: User = Depends(get_current_user)
     knowledge_base = request.app.state.knowledge_base
     # Get relevant context
     context = knowledge_base.get_relevant_context(data.message, user_profile)
-    # Get AI response
+    # Get AI response (may be dict or string)
     response = health_agent.chat_with_context(data.message, context, user_profile)
+    # If response is a dict (function call), handle emergency/routine
+    if isinstance(response, dict):
+        # Save conversation to database (store message only)
+        new_convo = Conversation(
+            user_id=user.id,
+            message=data.message,
+            response=response.get("message", ""),
+            context_used=context
+        )
+        db.add(new_convo)
+        db.commit()
+        # Return full response (urgency, message, recommendations, etc.)
+        return response
+    # Otherwise, response is a string
     # Moderate response using OpenAI moderation endpoint
     is_safe = moderate_response(response)
     if not is_safe:
@@ -73,6 +91,21 @@ async def chat_message(data: ChatMessage, user: User = Depends(get_current_user)
     db.commit()
     return {"response": response + DISCLAIMER}
 
+@router.post("/feedback")
+async def submit_feedback(
+    data: FeedbackRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    convo = db.query(Conversation).filter(Conversation.id == data.conversation_id, Conversation.user_id == user.id).first()
+    if not convo:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    if data.feedback not in ("up", "down"):
+        raise HTTPException(status_code=400, detail="Invalid feedback value")
+    convo.feedback = data.feedback
+    db.commit()
+    return {"success": True, "message": "Feedback recorded"}
+
 @router.get("/history", response_model=List[dict])
 async def get_history(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     history = (
@@ -81,18 +114,22 @@ async def get_history(user: User = Depends(get_current_user), db: Session = Depe
         .order_by(Conversation.timestamp.asc())
         .all()
     )
-    # Return as list of dicts for frontend
+    # Return as list of dicts for frontend, including id and feedback
     return [
         {
             "role": "user",
             "content": convo.message,
-            "timestamp": convo.timestamp.isoformat()
+            "timestamp": convo.timestamp.isoformat(),
+            "id": convo.id,
+            "feedback": convo.feedback
         }
         if i % 2 == 0 else
         {
             "role": "assistant",
             "content": convo.response,
-            "timestamp": convo.timestamp.isoformat()
+            "timestamp": convo.timestamp.isoformat(),
+            "id": convo.id,
+            "feedback": convo.feedback
         }
         for i, convo in enumerate(history)
     ] 

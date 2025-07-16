@@ -65,10 +65,22 @@ def send_message(message: str):
         json={"message": message},
         headers=headers
     )
-    
     if response.status_code == 200:
-        return response.json()["response"]
-    return "Error: Could not process message"
+        try:
+            return response.json()
+        except Exception:
+            return {"response": "Error: Could not process message"}
+    return {"response": "Error: Could not process message"}
+
+def send_feedback(conversation_id: int, feedback: str):
+    headers = {"Authorization": f"Bearer {st.session_state.token}"}
+    data = {"conversation_id": conversation_id, "feedback": feedback}
+    response = requests.post(
+        "http://localhost:8000/chat/feedback",
+        json=data,
+        headers=headers
+    )
+    return response.status_code == 200
 
 # Fetch conversation history from backend
 def fetch_history():
@@ -79,6 +91,13 @@ def fetch_history():
     return []
 
 # Main UI
+if 'emergency_active' not in st.session_state:
+    st.session_state.emergency_active = False
+if 'emergency_message' not in st.session_state:
+    st.session_state.emergency_message = None
+if 'emergency_recommendations' not in st.session_state:
+    st.session_state.emergency_recommendations = None
+
 def main():
     st.sidebar.markdown(PRIVACY_NOTICE)
     st.title("🏥 HealthChat RAG")
@@ -123,25 +142,65 @@ def main():
     else:
         # Chat interface
         st.subheader("Chat with Your Health Assistant")
-        
+        # Emergency warning
+        if st.session_state.emergency_active:
+            st.error(f"🚨 EMERGENCY: {st.session_state.emergency_message}")
+            if st.session_state.emergency_recommendations:
+                st.markdown("**Recommendations:**")
+                for rec in st.session_state.emergency_recommendations:
+                    st.markdown(f"- {rec}")
+            if st.button("Acknowledge Emergency Warning"):
+                st.session_state.emergency_active = False
+                st.session_state.emergency_message = None
+                st.session_state.emergency_recommendations = None
+            st.stop()
         # Display chat history
-        for message in st.session_state.chat_history:
+        for idx, message in enumerate(st.session_state.chat_history):
             with st.chat_message(message["role"]):
                 st.write(message["content"])
-        
+                # Feedback for assistant messages with valid id
+                if message["role"] == "assistant" and "id" in message:
+                    feedback = message.get("feedback")
+                    if feedback == "up":
+                        st.markdown(":thumbsup: Thank you for your feedback!")
+                    elif feedback == "down":
+                        st.markdown(":thumbsdown: Thank you for your feedback!")
+                    else:
+                        col1, col2 = st.columns([1,1])
+                        with col1:
+                            if st.button("👍", key=f"up_{idx}"):
+                                if send_feedback(message["id"], "up"):
+                                    st.session_state.chat_history[idx]["feedback"] = "up"
+                                    st.rerun()
+                        with col2:
+                            if st.button("👎", key=f"down_{idx}"):
+                                if send_feedback(message["id"], "down"):
+                                    st.session_state.chat_history[idx]["feedback"] = "down"
+                                    st.rerun()
         # Chat input
         if prompt := st.chat_input("Ask about your health..."):
             # Add user message
             st.session_state.chat_history.append({"role": "user", "content": prompt})
-            
             # Get AI response
             with st.spinner("Thinking..."):
                 response = send_message(prompt)
-            
-            # Add AI response
-            st.session_state.chat_history.append({"role": "assistant", "content": response})
-            
-            st.rerun()
+            # Emergency detection
+            if isinstance(response, dict) and response.get("urgency") == "emergency":
+                st.session_state.emergency_active = True
+                st.session_state.emergency_message = response.get("message", "Emergency detected.")
+                st.session_state.emergency_recommendations = response.get("recommendations", [])
+                st.session_state.chat_history.append({"role": "assistant", "content": response.get("message", "")})
+                st.rerun()
+            else:
+                # Handle normal response (dict or string)
+                if isinstance(response, dict):
+                    content = response.get("message", response.get("response", "Error: Could not process message"))
+                else:
+                    content = response
+                st.session_state.chat_history.append({"role": "assistant", "content": content})
+                # Always refresh chat history from backend to get ids/feedback
+                st.session_state.chat_history = fetch_history()
+                st.rerun()
 
 if __name__ == "__main__":
     main() 
