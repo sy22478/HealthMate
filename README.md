@@ -65,3 +65,31 @@ streamlit run frontend/streamlit_app.py
 ---
 
 For detailed development steps, see `Context.md`. 
+
+## Feature Branch Workflow
+
+To keep the `main` branch stable and enable easy code review:
+
+- **Create a new branch for each feature or bugfix**
+  - Use descriptive names, e.g., `feature/emergency-routing`, `fix/login-bug`
+- **Push your branch and open a Pull Request (PR) to `main`**
+- **Merge via PR after review and CI pass**
+- **Delete the feature branch after merging**
+
+### Example
+```bash
+git checkout main
+git pull origin main
+git checkout -b feature/your-feature-name
+# ... work, commit ...
+git push origin feature/your-feature-name
+# Open a PR on GitHub
+```
+
+After merging:
+```bash
+git checkout main
+git pull origin main
+git branch -d feature/your-feature-name
+git push origin --delete feature/your-feature-name
+``` 
