@@ -161,7 +161,7 @@ def main():
                 # Feedback for assistant messages with valid id
                 if message["role"] == "assistant" and "id" in message:
                     feedback = message.get("feedback")
-                    col1, col2, _ = st.columns([1,1,8])
+                    col1, col2 = st.columns([1,1])
                     with col1:
                         up_label = "👍" if feedback != "up" else "**👍** ✅"
                         if st.button(up_label, key=f"up_btn_{idx}"):
@@ -192,11 +192,15 @@ def main():
                 # Handle normal response (dict or string)
                 if isinstance(response, dict):
                     content = response.get("message", response.get("response", "Error: Could not process message"))
+                    msg_id = response.get("id")
                 else:
                     content = response
-                st.session_state.chat_history.append({"role": "assistant", "content": content})
-                # Always refresh chat history from backend to get ids/feedback
-                st.session_state.chat_history = fetch_history()
+                    msg_id = None
+                assistant_msg = {"role": "assistant", "content": content}
+                if msg_id is not None:
+                    assistant_msg["id"] = msg_id
+                st.session_state.chat_history.append(assistant_msg)
+                # Do NOT refresh chat history from backend here; keep local state in sync with user actions
                 st.rerun()
 
 if __name__ == "__main__":

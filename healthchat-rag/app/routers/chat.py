@@ -74,8 +74,10 @@ async def chat_message(data: ChatMessage, user: User = Depends(get_current_user)
         )
         db.add(new_convo)
         db.commit()
-        # Return full response (urgency, message, recommendations, etc.)
-        return response
+        # Return full response (urgency, message, recommendations, etc.) plus id
+        response_with_id = dict(response)
+        response_with_id["id"] = new_convo.id
+        return response_with_id
     # Otherwise, response is a string
     # Moderate response using OpenAI moderation endpoint
     is_safe = moderate_response(response)
@@ -90,7 +92,7 @@ async def chat_message(data: ChatMessage, user: User = Depends(get_current_user)
     )
     db.add(new_convo)
     db.commit()
-    return {"response": response + DISCLAIMER}
+    return {"response": response + DISCLAIMER, "id": new_convo.id}
 
 @router.post("/feedback")
 async def submit_feedback(
