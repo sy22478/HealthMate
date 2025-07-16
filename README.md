@@ -103,3 +103,10 @@ git pull origin main
 git branch -d feature/your-feature-name
 git push origin --delete feature/your-feature-name
 ```
+
+## Testing Policy
+
+- All new features and bugfixes must include appropriate unit and/or integration tests.
+- Pull requests without tests for new code will not be merged.
+- Run all tests locally with `pytest` before pushing.
+- Aim to increase or maintain overall test coverage with every change.
