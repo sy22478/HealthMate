@@ -161,22 +161,19 @@ def main():
                 # Feedback for assistant messages with valid id
                 if message["role"] == "assistant" and "id" in message:
                     feedback = message.get("feedback")
-                    if feedback == "up":
-                        st.markdown(":thumbsup: Thank you for your feedback!")
-                    elif feedback == "down":
-                        st.markdown(":thumbsdown: Thank you for your feedback!")
-                    else:
-                        col1, col2 = st.columns([1,1])
-                        with col1:
-                            if st.button("👍", key=f"up_{idx}"):
-                                if send_feedback(message["id"], "up"):
-                                    st.session_state.chat_history[idx]["feedback"] = "up"
-                                    st.rerun()
-                        with col2:
-                            if st.button("👎", key=f"down_{idx}"):
-                                if send_feedback(message["id"], "down"):
-                                    st.session_state.chat_history[idx]["feedback"] = "down"
-                                    st.rerun()
+                    col1, col2, _ = st.columns([1,1,8])
+                    with col1:
+                        up_label = "👍" if feedback != "up" else "**👍** ✅"
+                        if st.button(up_label, key=f"up_btn_{idx}"):
+                            if feedback != "up" and send_feedback(message["id"], "up"):
+                                st.session_state.chat_history[idx]["feedback"] = "up"
+                                st.rerun()
+                    with col2:
+                        down_label = "👎" if feedback != "down" else "**👎** ✅"
+                        if st.button(down_label, key=f"down_btn_{idx}"):
+                            if feedback != "down" and send_feedback(message["id"], "down"):
+                                st.session_state.chat_history[idx]["feedback"] = "down"
+                                st.rerun()
         # Chat input
         if prompt := st.chat_input("Ask about your health..."):
             # Add user message
