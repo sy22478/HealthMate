@@ -64,7 +64,7 @@ streamlit run frontend/streamlit_app.py
 
 ---
 
-For detailed development steps, see `Context.md`. 
+For detailed development steps, see `Context.md`.
 
 ## Running Tests with Coverage
 
@@ -74,4 +74,32 @@ To run all tests and see a code coverage report locally:
 pytest --cov=healthchat-rag/app --cov-report=term-missing healthchat-rag/tests/
 ```
 
-Coverage is also reported automatically in CI (see the Actions tab on GitHub). 
+Coverage is also reported automatically in CI (see the Actions tab on GitHub).
+
+## Feature Branch Workflow
+
+To keep the `main` branch stable and enable easy code review:
+
+- **Create a new branch for each feature or bugfix**
+  - Use descriptive names, e.g., `feature/emergency-routing`, `fix/login-bug`
+- **Push your branch and open a Pull Request (PR) to `main`**
+- **Merge via PR after review and CI pass**
+- **Delete the feature branch after merging**
+
+### Example
+```bash
+git checkout main
+git pull origin main
+git checkout -b feature/your-feature-name
+# ... work, commit ...
+git push origin feature/your-feature-name
+# Open a PR on GitHub
+```
+
+After merging:
+```bash
+git checkout main
+git pull origin main
+git branch -d feature/your-feature-name
+git push origin --delete feature/your-feature-name
+```
