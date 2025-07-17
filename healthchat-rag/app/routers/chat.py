@@ -48,6 +48,9 @@ def moderate_response(response_text: str) -> bool:
 
 @router.post("/message")
 async def chat_message(data: ChatMessage, user: User = Depends(get_current_user), request: Request = None, db: Session = Depends(get_db)):
+    knowledge_base = getattr(request.app.state, "knowledge_base", None)
+    if knowledge_base is None:
+        raise HTTPException(status_code=503, detail="Knowledge base is still loading. Please try again in a moment.")
     # Build user profile dict
     user_profile = {
         "email": user.email,
@@ -56,8 +59,6 @@ async def chat_message(data: ChatMessage, user: User = Depends(get_current_user)
         "medical_conditions": user.medical_conditions,
         "medications": user.medications
     }
-    # Get knowledge_base from app state
-    knowledge_base = request.app.state.knowledge_base
     # Get relevant context
     context = knowledge_base.get_relevant_context(data.message, user_profile)
     # Get AI response (may be dict or string)

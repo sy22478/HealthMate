@@ -8,8 +8,18 @@ from app.routers import auth_router, chat_router, health_router
 from app.services.vector_store import VectorStore
 from app.services.knowledge_base import MedicalKnowledgeBase
 from app.config import settings
+from contextlib import asynccontextmanager
 
-app = FastAPI(title="HealthChat RAG API", version="1.0.0")
+@asynccontextmanager
+async def lifespan(app):
+    vector_store = VectorStore(settings.pinecone_api_key, settings.pinecone_environment, settings.pinecone_index_name)
+    knowledge_base = MedicalKnowledgeBase(vector_store)
+    knowledge_base.load_medical_sources()
+    app.state.knowledge_base = knowledge_base
+    yield
+    # Optionally, add cleanup logic here
+
+app = FastAPI(title="HealthChat RAG API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -22,14 +32,6 @@ app.add_middleware(
 # Global vector store and knowledge base
 vector_store = None
 knowledge_base = None
-
-@app.on_event("startup")
-def startup_event():
-    global vector_store, knowledge_base
-    vector_store = VectorStore(settings.pinecone_api_key, settings.pinecone_environment, settings.pinecone_index_name)
-    knowledge_base = MedicalKnowledgeBase(vector_store)
-    knowledge_base.load_medical_sources()
-    app.state.knowledge_base = knowledge_base
 
 # Include routers
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
