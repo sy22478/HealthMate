@@ -65,7 +65,6 @@ async def chat_message(data: ChatMessage, user: User = Depends(get_current_user)
     response = health_agent.chat_with_context(data.message, context, user_profile)
     # If response is a dict (function call), handle emergency/routine
     if isinstance(response, dict):
-        # Save conversation to database (store message only)
         new_convo = Conversation(
             user_id=user.id,
             message=data.message,
@@ -74,16 +73,12 @@ async def chat_message(data: ChatMessage, user: User = Depends(get_current_user)
         )
         db.add(new_convo)
         db.commit()
-        # Return full response (urgency, message, recommendations, etc.) plus id
         response_with_id = dict(response)
         response_with_id["id"] = new_convo.id
         return response_with_id
-    # Otherwise, response is a string
-    # Moderate response using OpenAI moderation endpoint
     is_safe = moderate_response(response)
     if not is_safe:
         return {"response": "⚠️ This response was blocked for safety by our moderation system. Please consult a healthcare professional." + DISCLAIMER}
-    # Save conversation to database
     new_convo = Conversation(
         user_id=user.id,
         message=data.message,

@@ -10,13 +10,6 @@ st.set_page_config(
     layout="wide"
 )
 
-# Privacy notice
-PRIVACY_NOTICE = """
-**Privacy Notice**
-
-Your data is used only to provide personalized health insights during your session. We do not share your information with third parties. For your privacy, you may request deletion of your data at any time. This app is for informational purposes only and is not a substitute for professional medical advice.
-"""
-
 # Session state initialization
 if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
@@ -99,8 +92,8 @@ if 'emergency_recommendations' not in st.session_state:
     st.session_state.emergency_recommendations = None
 
 def main():
-    st.sidebar.markdown(PRIVACY_NOTICE)
-    st.title("🏥 HealthChat RAG")
+    # st.sidebar.markdown(PRIVACY_NOTICE)
+    st.title("\U0001F3E5 HealthChat RAG")
     st.markdown("Your AI-powered health assistant with personalized medical insights")
     
     if not st.session_state.authenticated:

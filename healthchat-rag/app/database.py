@@ -3,9 +3,12 @@ from sqlalchemy.orm import sessionmaker
 
 from .base import Base
 
+engine = None
+SessionLocal = None
 try:
     from app.config import settings
     SQLALCHEMY_DATABASE_URL = settings.postgres_uri
+    print("[database.py] Using DB URL:", SQLALCHEMY_DATABASE_URL)
     engine = create_engine(
         SQLALCHEMY_DATABASE_URL,
         pool_pre_ping=True,   # Helps with serverless DBs like Neon
@@ -13,7 +16,9 @@ try:
         max_overflow=2        # Allow a few extra connections
     )
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-except ImportError:
+    print("[database.py] Engine created successfully.")
+except Exception as e:
+    print("[database.py] Failed to create engine:", e)
     # Alembic or other tools can still import Base
     pass
 
