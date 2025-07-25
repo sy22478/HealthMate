@@ -1,0 +1,137 @@
+/* Global CSS Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* --- Responsive Design --- */
+:root {
+  --primary-color: #2a9d8f;
+  --secondary-color: #264653;
+  --accent-color: #e9c46a;
+  --background-color: #f4f4f4;
+  --text-color: #222;
+  --border-radius: 8px;
+  --transition: 0.2s ease;
+  --header-height: 64px;
+}
+
+body {
+  font-family: 'Inter', Arial, sans-serif;
+  background: var(--background-color);
+  color: var(--text-color);
+}
+
+/* Grid system */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-left: -8px;
+  margin-right: -8px;
+}
+.col {
+  flex: 1 1 0;
+  padding: 8px;
+}
+
+/* Responsive breakpoints */
+@media (max-width: 768px) {
+  .dashboard-sidebar {
+    width: 60px !important;
+    min-width: 60px !important;
+    overflow-x: hidden;
+  }
+  .dashboard-main {
+    padding: 0.5rem !important;
+  }
+  .row {
+    flex-direction: column;
+  }
+  .col {
+    width: 100% !important;
+    padding: 4px;
+  }
+  .card {
+    min-width: 90vw;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-header, .dashboard-footer {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  .dashboard-main {
+    padding: 0.2rem !important;
+  }
+  .card {
+    min-width: 98vw;
+    font-size: 0.95rem;
+  }
+}
+
+/* Touch-friendly buttons */
+button, .stButton > button {
+  min-height: 44px;
+  min-width: 44px;
+  font-size: 1rem;
+  border-radius: var(--border-radius);
+  padding: 0.5rem 1.2rem;
+  transition: background var(--transition);
+}
+button:active, .stButton > button:active {
+  background: var(--accent-color);
+}
+
+/* Collapsible sections for mobile */
+@media (max-width: 768px) {
+  .stExpanderHeader {
+    font-size: 1.1rem;
+    padding: 0.6rem 0.8rem;
+  }
+}
+
+/* --- Light/Dark Theme --- */
+:root[data-theme='light'] {
+  --background-color: #f4f4f4;
+  --text-color: #222;
+  --primary-color: #2a9d8f;
+  --secondary-color: #264653;
+  --accent-color: #e9c46a;
+}
+:root[data-theme='dark'] {
+  --background-color: #222;
+  --text-color: #f4f4f4;
+  --primary-color: #2a9d8f;
+  --secondary-color: #264653;
+  --accent-color: #e9c46a;
+}
+
+/* --- Accessibility --- */
+[aria-label], [role] {
+  outline: 2px solid #e9c46a;
+  outline-offset: 2px;
+}
+:focus {
+  outline: 2px solid #2a9d8f !important;
+  outline-offset: 2px;
+}
+
+/* High contrast mode */
+body.high-contrast {
+  background: #000 !important;
+  color: #fff !important;
+}
+
+/* Screen reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  border: 0;
+}

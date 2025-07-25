@@ -14,6 +14,8 @@ class User(Base):
     medications = Column(Text)  # JSON string
     created_at = Column(DateTime, default=datetime.utcnow)
     is_active = Column(Boolean, default=True)
+    reset_token = Column(String, nullable=True)
+    reset_token_expires = Column(DateTime, nullable=True)
 
 class Conversation(Base):
     __tablename__ = "conversations"

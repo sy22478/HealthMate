@@ -1,0 +1,33 @@
+
+  You can now view your Streamlit app in your browser.
+
+  Local URL: http://localhost:8501
+  Network URL: http://192.168.4.21:8501
+
+WARNING:utils.auth_manager:Session refresh failed
+WARNING:utils.auth_manager:Session refresh failed
+WARNING:utils.auth_manager:Session refresh failed
+INFO:numexpr.utils:NumExpr defaulting to 8 threads.
+2025-07-24 23:42:38.975 Uncaught app exception
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/site-packages/streamlit/runtime/scriptrunner/exec_code.py", line 85, in exec_func_with_error_handling
+    result = func()
+             ^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/streamlit/runtime/scriptrunner/script_runner.py", line 576, in code_to_exec
+    exec(code, module.__dict__)
+  File "/Users/sonuyadav/HealthMate/healthchat-rag/frontend/pages/health_metrics.py", line 21, in <module>
+    weight = st.number_input("Weight (lbs)", min_value=50, max_value=500, value=150, step=0.5)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/streamlit/runtime/metrics_util.py", line 408, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/streamlit/elements/widgets/number_input.py", line 260, in number_input
+    return self._number_input(
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.12/site-packages/streamlit/elements/widgets/number_input.py", line 336, in _number_input
+    raise StreamlitAPIException(
+streamlit.errors.StreamlitAPIException: All numerical arguments must be of the same type.
+`value` has int type.
+`min_value` has int type.
+`max_value` has int type.
+`step` has float type.
