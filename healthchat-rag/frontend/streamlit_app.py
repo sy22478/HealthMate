@@ -432,9 +432,8 @@ def show_chat_interface():
             st.rerun()
         st.stop()
     
-    # Load chat history if not already loaded
-    if not st.session_state.chat_history:
-        st.session_state.chat_history = fetch_history()
+    # Always fetch fresh chat history to ensure we have the latest data
+    st.session_state.chat_history = fetch_history()
     
     # Display chat history
     for idx, message in enumerate(st.session_state.chat_history):
@@ -913,9 +912,8 @@ def show_chat_history():
     st.subheader("📝 Chat History")
     st.markdown("View and manage your conversation history with the health assistant.")
     
-    # Load chat history if not already loaded
-    if not st.session_state.chat_history:
-        st.session_state.chat_history = fetch_history()
+    # Always fetch fresh chat history to ensure we have the latest data
+    st.session_state.chat_history = fetch_history()
     
     if not st.session_state.chat_history:
         st.info("No chat history found. Start a conversation in the Chat section!")

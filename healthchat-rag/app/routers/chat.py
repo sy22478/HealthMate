@@ -5,7 +5,7 @@ from app.database import get_db
 from app.models.user import User, Conversation
 from app.services.openai_agent import HealthAgent
 from app.config import settings
-from jose import jwt, JWTError
+from app.utils.jwt_utils import jwt_manager
 from pydantic import BaseModel
 import json
 import openai
@@ -28,7 +28,7 @@ class FeedbackRequest(BaseModel):
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)):
     token = credentials.credentials
     try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=["HS256"])
+        payload = jwt_manager.verify_token(token, "access")
         user_id = payload.get("user_id")
         if user_id is None:
             raise HTTPException(status_code=401, detail="Invalid token")
@@ -36,7 +36,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
         return user
-    except JWTError:
+    except Exception as e:
         raise HTTPException(status_code=401, detail="Invalid token")
 
 def moderate_response(response_text: str) -> bool:

@@ -18,7 +18,7 @@ with st.expander("Log New Metrics", expanded=True):
         heart_rate = st.number_input("Heart Rate (bpm)", min_value=40, max_value=200, value=72)
         temperature = st.number_input("Temperature (°F)", min_value=95.0, max_value=105.0, value=98.6, step=0.1)
     with col3:
-        weight = st.number_input("Weight (lbs)", min_value=50, max_value=500, value=150, step=0.5)
+        weight = st.number_input("Weight (lbs)", min_value=50.0, max_value=500.0, value=150.0, step=0.5)
         height = st.number_input("Height (inches)", min_value=36, max_value=84, value=68)
     
     st.markdown("### Mood & Energy")
