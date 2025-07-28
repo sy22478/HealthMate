@@ -16,4 +16,4 @@ export PORT=${PORT:-8000}
 echo "🌐 Starting FastAPI server on port $PORT..."
 
 # Start the FastAPI application
-exec uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 
+exec uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --log-level info 
