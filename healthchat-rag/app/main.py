@@ -16,6 +16,15 @@ rootLogger.addHandler(logHandler)
 rootLogger.setLevel(logging.INFO)
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
+
+# Set default values for required environment variables
+os.environ.setdefault("OPENAI_API_KEY", "dummy_key")
+os.environ.setdefault("PINECONE_API_KEY", "dummy_key")
+os.environ.setdefault("PINECONE_ENVIRONMENT", "dummy_env")
+os.environ.setdefault("PINECONE_INDEX_NAME", "dummy_index")
+os.environ.setdefault("POSTGRES_URI", "sqlite:///./test.db")
+os.environ.setdefault("SECRET_KEY", "dummy_secret_key_for_development")
+
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware

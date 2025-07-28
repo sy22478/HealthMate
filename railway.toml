@@ -8,4 +8,10 @@ healthcheckTimeout = 600
 restartPolicyType = "on_failure"
 
 [deploy.variables]
-ENVIRONMENT = "production" 
+ENVIRONMENT = "production"
+OPENAI_API_KEY = "dummy_key"
+PINECONE_API_KEY = "dummy_key"
+PINECONE_ENVIRONMENT = "dummy_env"
+PINECONE_INDEX_NAME = "dummy_index"
+POSTGRES_URI = "sqlite:///./test.db"
+SECRET_KEY = "dummy_secret_key_for_development" 
