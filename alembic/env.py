@@ -5,8 +5,12 @@ from sqlalchemy import engine_from_config, pool
 from alembic import context
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from app.models.user import Base
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'healthchat-rag')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'healthchat-rag', 'app')))
+
+# Create a simple Base for migrations
+from sqlalchemy.orm import declarative_base
+Base = declarative_base()
 
 db_url = "postgresql+psycopg2://neondb_owner:npg_XKH0NeODJPz4@ep-lucky-bonus-ae6o3q2d-pooler.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require"
 

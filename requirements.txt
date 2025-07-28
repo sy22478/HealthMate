@@ -12,4 +12,30 @@ bcrypt
 python-multipart
 pydantic-settings
 python-dotenv
-pytest 
+pytest
+streamlit-option-menu
+plotly
+streamlit-aggrid
+streamlit-card
+streamlit-elements
+redis
+alembic
+cryptography
+celery
+prometheus-client
+sentry-sdk
+gunicorn
+psutil
+# Notification system dependencies
+sendgrid
+twilio
+jinja2
+email-validator
+pytz
+
+# Data pipeline dependencies
+pandas
+numpy
+psycopg2-binary
+apache-airflow
+kafka-python 

@@ -1,1 +1,3 @@
-.env
+# Ignore local SSL certificates for HTTPS development
+key.pem
+cert.pem

@@ -43,10 +43,16 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app):
-    vector_store = VectorStore(settings.pinecone_api_key, settings.pinecone_environment, settings.pinecone_index_name)
-    knowledge_base = MedicalKnowledgeBase(vector_store)
-    knowledge_base.load_medical_sources()
-    app.state.knowledge_base = knowledge_base
+    try:
+        logger.info("Initializing vector store and knowledge base...")
+        vector_store = VectorStore(settings.pinecone_api_key, settings.pinecone_environment, settings.pinecone_index_name)
+        knowledge_base = MedicalKnowledgeBase(vector_store)
+        knowledge_base.load_medical_sources()
+        app.state.knowledge_base = knowledge_base
+        logger.info("Vector store and knowledge base initialized successfully")
+    except Exception as e:
+        logger.warning(f"Failed to initialize vector store/knowledge base: {e}")
+        app.state.knowledge_base = None
     yield
     # Optionally, add cleanup logic here
 
@@ -124,6 +130,11 @@ async def health_check():
         "environment": settings.environment,
         "timestamp": "2024-01-01T00:00:00Z"  # In production, use actual timestamp
     }
+
+@app.get("/health/simple")
+async def simple_health_check():
+    """Simple health check that doesn't depend on external services."""
+    return {"status": "ok"}
 
 @app.get("/security-info")
 async def security_info():
