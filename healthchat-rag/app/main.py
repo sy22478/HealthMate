@@ -43,6 +43,7 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app):
+    logger.info("Starting HealthMate application...")
     try:
         logger.info("Initializing vector store and knowledge base...")
         vector_store = VectorStore(settings.pinecone_api_key, settings.pinecone_environment, settings.pinecone_index_name)
@@ -53,8 +54,11 @@ async def lifespan(app):
     except Exception as e:
         logger.warning(f"Failed to initialize vector store/knowledge base: {e}")
         app.state.knowledge_base = None
+        logger.info("Application will continue without AI features")
+    
+    logger.info("HealthMate application started successfully")
     yield
-    # Optionally, add cleanup logic here
+    logger.info("Shutting down HealthMate application...")
 
 app = FastAPI(title="HealthChat RAG API", version="1.0.0", lifespan=lifespan)
 
@@ -121,6 +125,11 @@ app.include_router(backup_dr_router, tags=["backup-disaster-recovery"])
 async def root():
     return {"message": "HealthChat RAG API is running"}
 
+@app.get("/test")
+async def test_endpoint():
+    """Simple test endpoint for debugging."""
+    return {"status": "ok", "message": "Test endpoint working"}
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint for monitoring and load balancers."""
@@ -135,6 +144,16 @@ async def health_check():
 async def simple_health_check():
     """Simple health check that doesn't depend on external services."""
     return {"status": "ok"}
+
+@app.get("/health/debug")
+async def debug_health_check():
+    """Debug health check with more information."""
+    return {
+        "status": "ok",
+        "port": os.getenv("PORT", "8000"),
+        "environment": os.getenv("ENVIRONMENT", "unknown"),
+        "timestamp": "2024-01-01T00:00:00Z"
+    }
 
 @app.get("/security-info")
 async def security_info():

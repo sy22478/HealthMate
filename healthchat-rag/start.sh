@@ -10,10 +10,19 @@ if [ -d "/opt/venv" ]; then
     source /opt/venv/bin/activate
 fi
 
-# Set default port if not provided
+# Set default port if not provided (Railway sets PORT environment variable)
 export PORT=${PORT:-8000}
 
 echo "🌐 Starting FastAPI server on port $PORT..."
+echo "🔧 Environment: $ENVIRONMENT"
+echo "🔧 Host: 0.0.0.0"
+echo "🔧 Port: $PORT"
 
-# Start the FastAPI application with longer timeout for startup
-exec uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --log-level info --timeout-keep-alive 75 
+# Start the FastAPI application with Railway-specific settings
+exec uvicorn app.main:app \
+    --host 0.0.0.0 \
+    --port $PORT \
+    --workers 1 \
+    --log-level info \
+    --timeout-keep-alive 75 \
+    --access-log 

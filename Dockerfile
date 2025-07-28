@@ -30,7 +30,7 @@ EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
-    CMD curl -f http://localhost:8000/health/simple || exit 1
+    CMD curl -f http://localhost:8000/health/debug || exit 1
 
 # Start command - explicitly use start.sh
 CMD ["./start.sh"] 

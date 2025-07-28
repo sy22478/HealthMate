@@ -3,6 +3,9 @@ builder = "dockerfile"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-healthcheckPath = "/health/simple"
+healthcheckPath = "/health/debug"
 healthcheckTimeout = 600
-restartPolicyType = "on_failure" 
+restartPolicyType = "on_failure"
+
+[deploy.variables]
+ENVIRONMENT = "production" 
