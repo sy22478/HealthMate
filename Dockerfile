@@ -1,4 +1,4 @@
-# HealthMate Railway Dockerfile - Minimal Version
+# HealthMate Railway Dockerfile - Full Version with AI
 # This Dockerfile is specifically for Railway deployment
 FROM python:3.11-slim
 
@@ -12,14 +12,14 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
-COPY healthchat-rag/requirements_minimal.txt .
-RUN pip install --no-cache-dir -r requirements_minimal.txt
+COPY healthchat-rag/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code from healthchat-rag subdirectory
 COPY healthchat-rag/ .
 
 # Make start script executable
-RUN chmod +x start_minimal.sh
+RUN chmod +x start.sh
 
 # Create non-root user
 RUN useradd -m -u 1000 healthmate && chown -R healthmate:healthmate /app
@@ -32,5 +32,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
     CMD curl -f http://localhost:8000/health/debug || exit 1
 
-# Start command - use minimal version
-CMD ["./start_minimal.sh"] 
+# Start command - use full app with AI features
+CMD ["./start.sh"] 
