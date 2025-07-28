@@ -1,5 +1,6 @@
 from .auth import router as auth_router
 from .chat import router as chat_router
+from .enhanced_chat import router as enhanced_chat_router
 from .health import router as health_router
 from .health_data import router as health_data_router
 from .analytics import router as analytics_router
