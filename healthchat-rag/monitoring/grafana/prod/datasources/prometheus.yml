@@ -1,0 +1,45 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      timeInterval: "15s"
+      queryTimeout: "60s"
+      httpMethod: "POST"
+    secureJsonData: {}
+
+  - name: PostgreSQL
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    database: healthmate
+    user: healthmate_user
+    isDefault: false
+    editable: true
+    jsonData:
+      sslmode: "require"
+      maxOpenConns: 100
+      maxIdleConns: 100
+      connMaxLifetime: 14400
+      postgresVersion: 1500
+      timescaledb: false
+    secureJsonData:
+      password: "healthmate_password"
+
+  - name: Redis
+    type: redis-datasource
+    access: proxy
+    url: redis:6379
+    isDefault: false
+    editable: true
+    jsonData:
+      poolSize: 5
+      timeout: 10
+      pingInterval: 0
+      pipelineWindow: 0
+    secureJsonData: {} 

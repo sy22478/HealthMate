@@ -1,0 +1,513 @@
+# Auto-scaling Policies for HealthMate
+# This configuration defines comprehensive auto-scaling policies for different system components
+
+---
+# Application Auto-scaling Policy
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: healthmate-app-hpa
+  namespace: healthmate
+  labels:
+    app: healthmate-backend
+    component: autoscaling
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: healthmate-backend
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+  # CPU-based scaling
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  # Memory-based scaling
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  # Custom metrics for request rate
+  - type: Object
+    object:
+      metric:
+        name: requests-per-second
+      describedObject:
+        apiVersion: networking.k8s.io/v1
+        kind: Ingress
+        name: healthmate-ingress
+      target:
+        type: AverageValue
+        averageValue: 100
+  # Custom metrics for response time
+  - type: Object
+    object:
+      metric:
+        name: response-time-95th-percentile
+      describedObject:
+        apiVersion: networking.k8s.io/v1
+        kind: Ingress
+        name: healthmate-ingress
+      target:
+        type: AverageValue
+        averageValue: 500
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+      - type: Pods
+        value: 1
+        periodSeconds: 60
+      selectPolicy: Max
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+      - type: Pods
+        value: 2
+        periodSeconds: 15
+      selectPolicy: Min
+---
+# WebSocket Service Auto-scaling Policy
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: healthmate-websocket-hpa
+  namespace: healthmate
+  labels:
+    app: healthmate-websocket
+    component: autoscaling
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: healthmate-websocket
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 60
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Object
+    object:
+      metric:
+        name: websocket-connections
+      describedObject:
+        apiVersion: v1
+        kind: Service
+        name: healthmate-websocket-service
+      target:
+        type: AverageValue
+        averageValue: 1000
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 600
+      policies:
+      - type: Percent
+        value: 5
+        periodSeconds: 120
+      - type: Pods
+        value: 1
+        periodSeconds: 120
+      selectPolicy: Max
+    scaleUp:
+      stabilizationWindowSeconds: 30
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 10
+      - type: Pods
+        value: 1
+        periodSeconds: 10
+      selectPolicy: Min
+---
+# Celery Worker Auto-scaling Policy
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: healthmate-celery-hpa
+  namespace: healthmate
+  labels:
+    app: healthmate-celery
+    component: autoscaling
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: healthmate-celery-worker
+  minReplicas: 2
+  maxReplicas: 15
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 75
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  - type: Object
+    object:
+      metric:
+        name: celery-queue-length
+      describedObject:
+        apiVersion: v1
+        kind: Service
+        name: redis-service
+      target:
+        type: AverageValue
+        averageValue: 100
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 20
+        periodSeconds: 60
+      - type: Pods
+        value: 1
+        periodSeconds: 60
+      selectPolicy: Max
+    scaleUp:
+      stabilizationWindowSeconds: 30
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+      - type: Pods
+        value: 2
+        periodSeconds: 15
+      selectPolicy: Min
+---
+# Database Read Replica Auto-scaling Policy
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: postgres-replica-hpa
+  namespace: healthmate
+  labels:
+    app: postgres-replica
+    component: autoscaling
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: postgres-replica
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 75
+  - type: Object
+    object:
+      metric:
+        name: database-connections
+      describedObject:
+        apiVersion: v1
+        kind: Service
+        name: postgres-read-only
+      target:
+        type: AverageValue
+        averageValue: 50
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 600
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 120
+      - type: Pods
+        value: 1
+        periodSeconds: 120
+      selectPolicy: Max
+    scaleUp:
+      stabilizationWindowSeconds: 120
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 30
+      - type: Pods
+        value: 1
+        periodSeconds: 30
+      selectPolicy: Min
+---
+# Redis Cluster Auto-scaling Policy
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: redis-cluster-hpa
+  namespace: healthmate
+  labels:
+    app: redis-cluster
+    component: autoscaling
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: redis-cluster
+  minReplicas: 3
+  maxReplicas: 9
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 80
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 85
+  - type: Object
+    object:
+      metric:
+        name: redis-commands-per-second
+      describedObject:
+        apiVersion: v1
+        kind: Service
+        name: redis-cluster-service
+      target:
+        type: AverageValue
+        averageValue: 10000
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+      - type: Pods
+        value: 1
+        periodSeconds: 60
+      selectPolicy: Max
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+      - type: Pods
+        value: 1
+        periodSeconds: 15
+      selectPolicy: Min
+---
+# Vertical Pod Autoscaler for Application
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: healthmate-app-vpa
+  namespace: healthmate
+  labels:
+    app: healthmate-backend
+    component: autoscaling
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: healthmate-backend
+  updatePolicy:
+    updateMode: "Auto"
+  resourcePolicy:
+    containerPolicies:
+    - containerName: '*'
+      minAllowed:
+        cpu: 100m
+        memory: 256Mi
+      maxAllowed:
+        cpu: 1000m
+        memory: 2Gi
+      controlledValues: RequestsAndLimits
+---
+# Vertical Pod Autoscaler for Database
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: postgres-vpa
+  namespace: healthmate
+  labels:
+    app: postgres-primary
+    component: autoscaling
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: postgres-primary
+  updatePolicy:
+    updateMode: "Auto"
+  resourcePolicy:
+    containerPolicies:
+    - containerName: '*'
+      minAllowed:
+        cpu: 500m
+        memory: 1Gi
+      maxAllowed:
+        cpu: 2000m
+        memory: 4Gi
+      controlledValues: RequestsAndLimits
+---
+# Cluster Autoscaler Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-autoscaler-config
+  namespace: kube-system
+data:
+  cluster-autoscaler.yaml: |
+    apiVersion: cluster.k8s.io/v1alpha1
+    kind: ClusterAutoscaler
+    metadata:
+      name: healthmate-cluster-autoscaler
+      namespace: kube-system
+    spec:
+      scaleDown:
+        enabled: true
+        delayAfterAdd: 10m
+        delayAfterDelete: 10s
+        delayAfterFailure: 3m
+        unneeded: 10m
+        utilizationThreshold: 0.5
+      scaleDownUnneeded: 10m
+      scaleDownUnready: 20m
+      maxNodeProvisionTime: 15m
+      nodeGroups:
+      - minSize: 3
+        maxSize: 10
+        name: healthmate-node-group
+      resourceLimits:
+        maxNodesTotal: 20
+        cores:
+          min: 8
+          max: 64
+        memory:
+          min: 16Gi
+          max: 128Gi
+---
+# Pod Disruption Budget for High Availability
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: healthmate-app-pdb
+  namespace: healthmate
+  labels:
+    app: healthmate-backend
+    component: high-availability
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: healthmate-backend
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: postgres-pdb
+  namespace: healthmate
+  labels:
+    app: postgres-primary
+    component: high-availability
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: postgres-primary
+---
+# Network Policy for Auto-scaling Components
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: autoscaling-network-policy
+  namespace: healthmate
+  labels:
+    component: autoscaling
+spec:
+  podSelector:
+    matchLabels:
+      component: autoscaling
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: TCP
+      port: 8080
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: healthmate
+    ports:
+    - protocol: TCP
+      port: 8000
+    - protocol: TCP
+      port: 5432
+    - protocol: TCP
+      port: 6379
+---
+# Priority Class for Auto-scaling Components
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: healthmate-autoscaling-priority
+value: 1000000
+globalDefault: false
+description: "Priority class for HealthMate auto-scaling components"
+---
+# Resource Quotas for Auto-scaling
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: healthmate-autoscaling-quota
+  namespace: healthmate
+  labels:
+    component: autoscaling
+spec:
+  hard:
+    requests.cpu: "20"
+    requests.memory: 40Gi
+    limits.cpu: "40"
+    limits.memory: 80Gi
+    pods: "50"
+    services: "20"
+    persistentvolumeclaims: "10"
+    configmaps: "50"
+    secrets: "20" 

@@ -1,0 +1,200 @@
+groups:
+  - name: healthmate_alerts
+    rules:
+      # High CPU Usage Alert
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: healthmate
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is above 80% for more than 5 minutes on {{ $labels.instance }}"
+
+      # High Memory Usage Alert
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: healthmate
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is above 85% for more than 5 minutes on {{ $labels.instance }}"
+
+      # High Disk Usage Alert
+      - alert: HighDiskUsage
+        expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          service: healthmate
+        annotations:
+          summary: "High disk usage on {{ $labels.instance }}"
+          description: "Disk usage is above 90% for more than 5 minutes on {{ $labels.instance }}"
+
+      # Application Down Alert
+      - alert: ApplicationDown
+        expr: up{job="healthmate-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: healthmate
+        annotations:
+          summary: "HealthMate application is down"
+          description: "HealthMate backend application has been down for more than 1 minute"
+
+      # High Response Time Alert
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: healthmate
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is above 2 seconds for more than 5 minutes"
+
+      # High Error Rate Alert
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) * 100 > 5
+        for: 5m
+        labels:
+          severity: critical
+          service: healthmate
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is above 5% for more than 5 minutes"
+
+      # Database Connection Issues
+      - alert: DatabaseConnectionIssues
+        expr: pg_stat_database_numbackends > 80
+        for: 2m
+        labels:
+          severity: warning
+          service: healthmate
+        annotations:
+          summary: "High database connections"
+          description: "Number of database connections is above 80 for more than 2 minutes"
+
+      # Redis Connection Issues
+      - alert: RedisConnectionIssues
+        expr: redis_connected_clients > 100
+        for: 2m
+        labels:
+          severity: warning
+          service: healthmate
+        annotations:
+          summary: "High Redis connections"
+          description: "Number of Redis connections is above 100 for more than 2 minutes"
+
+      # Celery Worker Down
+      - alert: CeleryWorkerDown
+        expr: up{job="healthmate-celery"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: healthmate
+        annotations:
+          summary: "Celery worker is down"
+          description: "Celery worker has been down for more than 2 minutes"
+
+      # High Queue Length
+      - alert: HighQueueLength
+        expr: celery_queue_length > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: healthmate
+        annotations:
+          summary: "High queue length detected"
+          description: "Celery queue length is above 1000 for more than 5 minutes"
+
+      # API Rate Limiting
+      - alert: APIRateLimitExceeded
+        expr: rate(http_requests_total{status="429"}[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: healthmate
+        annotations:
+          summary: "API rate limit exceeded"
+          description: "Rate limit exceeded more than 10 times in 5 minutes"
+
+      # SSL Certificate Expiry
+      - alert: SSLCertificateExpiry
+        expr: probe_ssl_earliest_cert_expiry - time() < 86400 * 30
+        for: 0m
+        labels:
+          severity: warning
+          service: healthmate
+        annotations:
+          summary: "SSL certificate expiring soon"
+          description: "SSL certificate will expire in less than 30 days"
+
+      # Health Check Failure
+      - alert: HealthCheckFailure
+        expr: health_check_status == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: healthmate
+        annotations:
+          summary: "Health check failed"
+          description: "Application health check has failed for more than 1 minute"
+
+      # Memory Leak Detection
+      - alert: MemoryLeak
+        expr: increase(process_resident_memory_bytes[1h]) > 100 * 1024 * 1024
+        for: 10m
+        labels:
+          severity: warning
+          service: healthmate
+        annotations:
+          summary: "Potential memory leak detected"
+          description: "Memory usage increased by more than 100MB in the last hour"
+
+      # Slow Database Queries
+      - alert: SlowDatabaseQueries
+        expr: histogram_quantile(0.95, rate(pg_stat_activity_max_tx_duration[5m])) > 30
+        for: 5m
+        labels:
+          severity: warning
+          service: healthmate
+        annotations:
+          summary: "Slow database queries detected"
+          description: "95th percentile of database query duration is above 30 seconds"
+
+      # High Network I/O
+      - alert: HighNetworkIO
+        expr: rate(node_network_receive_bytes_total[5m]) + rate(node_network_transmit_bytes_total[5m]) > 100 * 1024 * 1024
+        for: 5m
+        labels:
+          severity: warning
+          service: healthmate
+        annotations:
+          summary: "High network I/O detected"
+          description: "Network I/O is above 100MB/s for more than 5 minutes"
+
+      # Pod Restart Alert
+      - alert: PodRestarting
+        expr: increase(kube_pod_container_status_restarts_total[15m]) > 5
+        for: 0m
+        labels:
+          severity: warning
+          service: healthmate
+        annotations:
+          summary: "Pod restarting frequently"
+          description: "Pod has restarted more than 5 times in the last 15 minutes"
+
+      # Resource Quota Exceeded
+      - alert: ResourceQuotaExceeded
+        expr: kube_resourcequota_used / kube_resourcequota_hard * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          service: healthmate
+        annotations:
+          summary: "Resource quota nearly exceeded"
+          description: "Resource quota usage is above 90% for more than 5 minutes" 

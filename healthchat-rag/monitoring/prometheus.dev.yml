@@ -1,0 +1,68 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+  external_labels:
+    cluster: healthmate-dev
+    environment: development
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # HealthMate Backend API (Development)
+  - job_name: 'healthmate-backend-dev'
+    static_configs:
+      - targets: ['backend_dev:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    honor_labels: true
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '([^:]+)(?::\d+)?'
+        replacement: '${1}'
+
+  # HealthMate Celery Workers (Development)
+  - job_name: 'healthmate-celery-dev'
+    static_configs:
+      - targets: ['celery_worker_dev:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    honor_labels: true
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '([^:]+)(?::\d+)?'
+        replacement: '${1}'
+
+  # PostgreSQL Database (Development)
+  - job_name: 'postgres-dev'
+    static_configs:
+      - targets: ['postgres_dev:5432']
+    metrics_path: '/metrics'
+    scrape_interval: 60s
+    scrape_timeout: 15s
+    honor_labels: true
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '([^:]+)(?::\d+)?'
+        replacement: '${1}'
+
+  # Redis Cache (Development)
+  - job_name: 'redis-dev'
+    static_configs:
+      - targets: ['redis_dev:6379']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    honor_labels: true
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '([^:]+)(?::\d+)?'
+        replacement: '${1}' 

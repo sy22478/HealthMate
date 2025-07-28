@@ -1,0 +1,314 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: healthmate-backend
+  namespace: healthmate
+  labels:
+    app: healthmate-backend
+    version: v1.0.0
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: healthmate-backend
+  template:
+    metadata:
+      labels:
+        app: healthmate-backend
+        version: v1.0.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+      - name: healthmate-backend
+        image: healthmate/backend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        - containerPort: 8001
+          name: metrics
+          protocol: TCP
+        env:
+        - name: HEALTHMATE_ENVIRONMENT
+          value: "production"
+        - name: HEALTHMATE_POSTGRES_URI
+          valueFrom:
+            secretKeyRef:
+              name: healthmate-secrets
+              key: postgres-uri
+        - name: HEALTHMATE_REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: healthmate-secrets
+              key: redis-url
+        - name: HEALTHMATE_OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: healthmate-secrets
+              key: openai-api-key
+        - name: HEALTHMATE_PINECONE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: healthmate-secrets
+              key: pinecone-api-key
+        - name: HEALTHMATE_PINECONE_ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: healthmate-config
+              key: pinecone-environment
+        - name: HEALTHMATE_PINECONE_INDEX_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: healthmate-config
+              key: pinecone-index-name
+        - name: HEALTHMATE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: healthmate-secrets
+              key: secret-key
+        - name: HEALTHMATE_CORS_ALLOW_ORIGINS
+          valueFrom:
+            configMapKeyRef:
+              name: healthmate-config
+              key: cors-allow-origins
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+          successThreshold: 1
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+        volumeMounts:
+        - name: ssl-certs
+          mountPath: /app/ssl
+          readOnly: true
+        - name: logs
+          mountPath: /app/logs
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: ssl-certs
+        secret:
+          secretName: ssl-certificates
+      - name: logs
+        emptyDir: {}
+      nodeSelector:
+        node-type: application
+      tolerations:
+      - key: "node-type"
+        operator: "Equal"
+        value: "application"
+        effect: "NoSchedule"
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - healthmate-backend
+              topologyKey: kubernetes.io/hostname
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: healthmate-backend-service
+  namespace: healthmate
+  labels:
+    app: healthmate-backend
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  - port: 8001
+    targetPort: 8001
+    protocol: TCP
+    name: metrics
+  selector:
+    app: healthmate-backend
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 3600
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: healthmate-backend-hpa
+  namespace: healthmate
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: healthmate-backend
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  - type: Object
+    object:
+      metric:
+        name: requests-per-second
+      describedObject:
+        apiVersion: networking.k8s.io/v1
+        kind: Ingress
+        name: healthmate-ingress
+      target:
+        type: AverageValue
+        averageValue: 100
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+      - type: Pods
+        value: 1
+        periodSeconds: 60
+      selectPolicy: Max
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+      - type: Pods
+        value: 2
+        periodSeconds: 15
+      selectPolicy: Min
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: healthmate-ingress
+  namespace: healthmate
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    nginx.ingress.kubernetes.io/rate-limit-burst: "200"
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/websocket-services: "healthmate-backend-service"
+spec:
+  tls:
+  - hosts:
+    - healthmate.example.com
+    secretName: healthmate-tls
+  rules:
+  - host: healthmate.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: healthmate-backend-service
+            port:
+              number: 80
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: healthmate-config
+  namespace: healthmate
+data:
+  pinecone-environment: "us-west1-gcp"
+  pinecone-index-name: "healthmate-index"
+  cors-allow-origins: "https://healthmate.example.com,https://www.healthmate.example.com"
+  environment: "production"
+  log-level: "INFO"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: healthmate-secrets
+  namespace: healthmate
+type: Opaque
+data:
+  # Base64 encoded values (replace with actual values)
+  postgres-uri: cG9zdGdyZXNxbDovL2hlYWx0aG1hdGVfdXNlcjpoZWFsdGhtYXRlX3Bhc3N3b3JkQHBvc3RncmVzOjU0MzIvaGVhbHRobWF0ZQ==
+  redis-url: cmVkaXM6Ly9oZWFsdGhtYXRlX3JlZGlzX3Bhc3N3b3JkQHJlZGlzOjYzNzkvMA==
+  openai-api-key: c2stZXhhbXBsZS1vcGVuYWktYXBpLWtleQ==
+  pinecone-api-key: c2stZXhhbXBsZS1waW5lY29uZS1hcGkta2V5
+  secret-key: aGVhbHRobWF0ZS1zZWNyZXQta2V5LWZvci1wcm9kdWN0aW9u
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ssl-certificates
+  namespace: healthmate
+type: kubernetes.io/tls
+data:
+  # Base64 encoded SSL certificate and key (replace with actual values)
+  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCg==
+  tls.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCg== 

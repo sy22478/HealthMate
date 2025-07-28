@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ notification.title }}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 300;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .reminder-box {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .reminder-title {
+            color: #155724;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .reminder-message {
+            color: #155724;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        .medication-info {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .medication-info h3 {
+            color: #495057;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        .info-value {
+            color: #6c757d;
+        }
+        .action-buttons {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 0 10px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #1e7e34;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .time-highlight {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        .time-highlight .time {
+            font-size: 24px;
+            font-weight: bold;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💊 Medication Reminder</h1>
+        </div>
+        
+        <div class="content">
+            <div class="reminder-box">
+                <div class="reminder-title">{{ notification.title }}</div>
+                <div class="reminder-message">{{ notification.message }}</div>
+            </div>
+            
+            <div class="time-highlight">
+                <div class="time">⏰ Time to take medication</div>
+            </div>
+            
+            {% if notification.template_data %}
+            <div class="medication-info">
+                <h3>💊 Medication Details</h3>
+                {% if notification.template_data.medication_name %}
+                <div class="info-item">
+                    <span class="info-label">Medication</span>
+                    <span class="info-value">{{ notification.template_data.medication_name }}</span>
+                </div>
+                {% endif %}
+                
+                {% if notification.template_data.dosage %}
+                <div class="info-item">
+                    <span class="info-label">Dosage</span>
+                    <span class="info-value">{{ notification.template_data.dosage }}</span>
+                </div>
+                {% endif %}
+                
+                {% if notification.template_data.instructions %}
+                <div class="info-item">
+                    <span class="info-label">Instructions</span>
+                    <span class="info-value">{{ notification.template_data.instructions }}</span>
+                </div>
+                {% endif %}
+                
+                {% if notification.template_data.frequency %}
+                <div class="info-item">
+                    <span class="info-label">Frequency</span>
+                    <span class="info-value">{{ notification.template_data.frequency }}</span>
+                </div>
+                {% endif %}
+                
+                {% if notification.template_data.prescribed_by %}
+                <div class="info-item">
+                    <span class="info-label">Prescribed By</span>
+                    <span class="info-value">{{ notification.template_data.prescribed_by }}</span>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <div class="action-buttons">
+                <a href="{{ notification.template_data.log_url|default('#') }}" class="btn btn-primary">
+                    Log Medication Taken
+                </a>
+                <a href="{{ notification.template_data.dashboard_url|default('#') }}" class="btn btn-secondary">
+                    View Dashboard
+                </a>
+            </div>
+            
+            <p style="color: #6c757d; font-size: 14px; text-align: center;">
+                <strong>Priority:</strong> {{ notification.priority.value|title }} | 
+                <strong>Type:</strong> {{ notification.type.value|replace('_', ' ')|title }} |
+                <strong>Sent:</strong> {{ notification.created_at.strftime('%Y-%m-%d %H:%M UTC') }}
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated medication reminder from HealthMate.</p>
+            <p>Always follow your healthcare provider's instructions for medication use.</p>
+            <p>© 2024 HealthMate. All rights reserved.</p>
+            <p>
+                <a href="{{ notification.template_data.unsubscribe_url|default('#') }}" style="color: #6c757d;">
+                    Unsubscribe from medication reminders
+                </a>
+            </p>
+        </div>
+    </div>
+</body>
+</html> 

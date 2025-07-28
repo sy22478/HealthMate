@@ -1,0 +1,249 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database (Development)
+  postgres_dev:
+    image: postgres:15-alpine
+    container_name: healthmate_postgres_dev
+    environment:
+      POSTGRES_DB: healthmate_dev
+      POSTGRES_USER: healthmate_dev_user
+      POSTGRES_PASSWORD: dev_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5433:5432"  # Different port to avoid conflicts
+    networks:
+      - healthmate_dev_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U healthmate_dev_user -d healthmate_dev"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis Cache (Development)
+  redis_dev:
+    image: redis:7-alpine
+    container_name: healthmate_redis_dev
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_dev_data:/data
+    ports:
+      - "6380:6379"  # Different port to avoid conflicts
+    networks:
+      - healthmate_dev_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # HealthMate Backend API (Development)
+  backend_dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: development
+    container_name: healthmate_backend_dev
+    environment:
+      # Database
+      HEALTHMATE_POSTGRES_URI: postgresql://healthmate_dev_user:dev_password@postgres_dev:5432/healthmate_dev
+      
+      # Redis
+      HEALTHMATE_REDIS_URL: redis://redis_dev:6379/0
+      
+      # OpenAI (use test key for development)
+      HEALTHMATE_OPENAI_API_KEY: ${OPENAI_API_KEY:-sk-test-openai-api-key}
+      
+      # Pinecone (use test environment)
+      HEALTHMATE_PINECONE_API_KEY: ${PINECONE_API_KEY:-sk-test-pinecone-api-key}
+      HEALTHMATE_PINECONE_ENVIRONMENT: ${PINECONE_ENVIRONMENT:-us-west1-gcp}
+      HEALTHMATE_PINECONE_INDEX_NAME: ${PINECONE_INDEX_NAME:-healthmate-dev-index}
+      
+      # Security
+      HEALTHMATE_SECRET_KEY: dev-secret-key-for-development-only
+      HEALTHMATE_ENVIRONMENT: development
+      HEALTHMATE_DEBUG: "true"
+      
+      # CORS (allow all in development)
+      HEALTHMATE_CORS_ALLOW_ORIGINS: "*"
+      
+      # Rate Limiting (relaxed for development)
+      HEALTHMATE_RATE_LIMIT_ENABLED: "false"
+      
+      # Development specific
+      PYTHONPATH: /app
+      PYTHONDONTWRITEBYTECODE: 1
+      PYTHONUNBUFFERED: 1
+    ports:
+      - "8000:8000"
+      - "8001:8001"  # Debug port
+    volumes:
+      - ./app:/app/app:ro  # Mount source code for hot reloading
+      - ./alembic:/app/alembic:ro
+      - ./alembic.ini:/app/alembic.ini:ro
+      - ./create_tables.py:/app/create_tables.py:ro
+      - ./requirements.txt:/app/requirements.txt:ro
+      - ./logs:/app/logs  # Mount logs directory
+    depends_on:
+      postgres_dev:
+        condition: service_healthy
+      redis_dev:
+        condition: service_healthy
+    networks:
+      - healthmate_dev_network
+    restart: unless-stopped
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--log-level", "debug"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Development Nginx (optional, for testing production-like setup)
+  nginx_dev:
+    image: nginx:alpine
+    container_name: healthmate_nginx_dev
+    volumes:
+      - ./nginx/nginx.dev.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend_dev
+    networks:
+      - healthmate_dev_network
+    restart: unless-stopped
+
+  # Prometheus (Development)
+  prometheus_dev:
+    image: prom/prometheus:latest
+    container_name: healthmate_prometheus_dev
+    volumes:
+      - ./monitoring/prometheus.dev.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_dev_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=24h'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9091:9090"  # Different port to avoid conflicts
+    networks:
+      - healthmate_dev_network
+    restart: unless-stopped
+
+  # Grafana (Development)
+  grafana_dev:
+    image: grafana/grafana:latest
+    container_name: healthmate_grafana_dev
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "true"
+      GF_INSTALL_PLUGINS: "grafana-piechart-panel,grafana-worldmap-panel"
+    volumes:
+      - grafana_dev_data:/var/lib/grafana
+      - ./monitoring/grafana/dev/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/dev/datasources:/etc/grafana/provisioning/datasources:ro
+    ports:
+      - "3001:3000"  # Different port to avoid conflicts
+    depends_on:
+      - prometheus_dev
+    networks:
+      - healthmate_dev_network
+    restart: unless-stopped
+
+  # Celery Worker (Development)
+  celery_worker_dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: development
+    container_name: healthmate_celery_worker_dev
+    command: ["celery", "-A", "app.celery_app", "worker", "--loglevel=debug"]
+    environment:
+      # Same environment variables as backend_dev
+      HEALTHMATE_POSTGRES_URI: postgresql://healthmate_dev_user:dev_password@postgres_dev:5432/healthmate_dev
+      HEALTHMATE_REDIS_URL: redis://redis_dev:6379/0
+      HEALTHMATE_OPENAI_API_KEY: ${OPENAI_API_KEY:-sk-test-openai-api-key}
+      HEALTHMATE_PINECONE_API_KEY: ${PINECONE_API_KEY:-sk-test-pinecone-api-key}
+      HEALTHMATE_PINECONE_ENVIRONMENT: ${PINECONE_ENVIRONMENT:-us-west1-gcp}
+      HEALTHMATE_PINECONE_INDEX_NAME: ${PINECONE_INDEX_NAME:-healthmate-dev-index}
+      HEALTHMATE_SECRET_KEY: dev-secret-key-for-development-only
+      HEALTHMATE_ENVIRONMENT: development
+      HEALTHMATE_DEBUG: "true"
+      PYTHONPATH: /app
+    volumes:
+      - ./app:/app/app:ro
+      - ./logs:/app/logs
+    depends_on:
+      postgres_dev:
+        condition: service_healthy
+      redis_dev:
+        condition: service_healthy
+    networks:
+      - healthmate_dev_network
+    restart: unless-stopped
+
+  # Celery Beat (Development)
+  celery_beat_dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: development
+    container_name: healthmate_celery_beat_dev
+    command: ["celery", "-A", "app.celery_app", "beat", "--loglevel=debug"]
+    environment:
+      # Same environment variables as backend_dev
+      HEALTHMATE_POSTGRES_URI: postgresql://healthmate_dev_user:dev_password@postgres_dev:5432/healthmate_dev
+      HEALTHMATE_REDIS_URL: redis://redis_dev:6379/0
+      HEALTHMATE_OPENAI_API_KEY: ${OPENAI_API_KEY:-sk-test-openai-api-key}
+      HEALTHMATE_PINECONE_API_KEY: ${PINECONE_API_KEY:-sk-test-pinecone-api-key}
+      HEALTHMATE_PINECONE_ENVIRONMENT: ${PINECONE_ENVIRONMENT:-us-west1-gcp}
+      HEALTHMATE_PINECONE_INDEX_NAME: ${PINECONE_INDEX_NAME:-healthmate-dev-index}
+      HEALTHMATE_SECRET_KEY: dev-secret-key-for-development-only
+      HEALTHMATE_ENVIRONMENT: development
+      HEALTHMATE_DEBUG: "true"
+      PYTHONPATH: /app
+    volumes:
+      - ./app:/app/app:ro
+      - ./logs:/app/logs
+    depends_on:
+      postgres_dev:
+        condition: service_healthy
+      redis_dev:
+        condition: service_healthy
+    networks:
+      - healthmate_dev_network
+    restart: unless-stopped
+
+  # Mailhog for email testing (Development)
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: healthmate_mailhog
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - healthmate_dev_network
+    restart: unless-stopped
+
+volumes:
+  postgres_dev_data:
+    driver: local
+  redis_dev_data:
+    driver: local
+  prometheus_dev_data:
+    driver: local
+  grafana_dev_data:
+    driver: local
+
+networks:
+  healthmate_dev_network:
+    driver: bridge 

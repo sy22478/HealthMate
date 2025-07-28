@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  # Test Database
+  test-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: healthmate_test
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+    ports:
+      - "5433:5432"  # Different port to avoid conflicts
+    volumes:
+      - test_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d healthmate_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Test Redis
+  test-redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"  # Different port to avoid conflicts
+    volumes:
+      - test_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Test Application
+  test-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    environment:
+      DATABASE_URL: postgresql://test_user:test_password@test-db:5432/healthmate_test
+      REDIS_URL: redis://test-redis:6379/0
+      SECRET_KEY: test-secret-key-for-testing-only
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      REFRESH_TOKEN_EXPIRE_DAYS: 7
+      OPENAI_API_KEY: test-openai-key
+      PINECONE_API_KEY: test-pinecone-key
+      PINECONE_ENVIRONMENT: test-environment
+      ENCRYPTION_KEY: test-encryption-key-32-bytes-long
+      CORS_ALLOW_ORIGINS: "*"
+      TESTING: "true"
+    ports:
+      - "8001:8000"  # Different port to avoid conflicts
+    depends_on:
+      test-db:
+        condition: service_healthy
+      test-redis:
+        condition: service_healthy
+    volumes:
+      - ./tests:/app/tests
+      - ./app:/app/app
+    command: ["pytest", "-v", "--tb=short", "--cov=app", "--cov-report=html:htmlcov"]
+
+  # Test Database Migration
+  test-migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    environment:
+      DATABASE_URL: postgresql://test_user:test_password@test-db:5432/healthmate_test
+      SECRET_KEY: test-secret-key-for-testing-only
+    depends_on:
+      test-db:
+        condition: service_healthy
+    volumes:
+      - ./alembic:/app/alembic
+      - ./app:/app/app
+    command: ["alembic", "upgrade", "head"]
+
+  # Test Coverage Report
+  test-coverage:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    volumes:
+      - ./htmlcov:/app/htmlcov
+      - ./coverage.xml:/app/coverage.xml
+    command: ["echo", "Coverage report generated"]
+
+volumes:
+  test_db_data:
+  test_redis_data: 

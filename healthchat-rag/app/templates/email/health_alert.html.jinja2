@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ notification.title }}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 300;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .alert-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .alert-title {
+            color: #856404;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .alert-message {
+            color: #856404;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        .health-data {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .health-data h3 {
+            color: #495057;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .data-item:last-child {
+            border-bottom: none;
+        }
+        .data-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        .data-value {
+            color: #6c757d;
+        }
+        .action-buttons {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 0 10px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .priority-urgent {
+            border-left: 5px solid #dc3545;
+        }
+        .priority-high {
+            border-left: 5px solid #fd7e14;
+        }
+        .priority-normal {
+            border-left: 5px solid #ffc107;
+        }
+        .priority-low {
+            border-left: 5px solid #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚨 HealthMate Alert</h1>
+        </div>
+        
+        <div class="content priority-{{ notification.priority.value }}">
+            <div class="alert-box">
+                <div class="alert-title">{{ notification.title }}</div>
+                <div class="alert-message">{{ notification.message }}</div>
+            </div>
+            
+            {% if notification.template_data %}
+            <div class="health-data">
+                <h3>📊 Health Data Summary</h3>
+                {% if notification.template_data.health_metrics %}
+                    {% for metric, value in notification.template_data.health_metrics.items() %}
+                    <div class="data-item">
+                        <span class="data-label">{{ metric|title }}</span>
+                        <span class="data-value">{{ value }}</span>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+                
+                {% if notification.template_data.trend %}
+                <div class="data-item">
+                    <span class="data-label">Trend</span>
+                    <span class="data-value">{{ notification.template_data.trend }}</span>
+                </div>
+                {% endif %}
+                
+                {% if notification.template_data.recommendation %}
+                <div class="data-item">
+                    <span class="data-label">Recommendation</span>
+                    <span class="data-value">{{ notification.template_data.recommendation }}</span>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <div class="action-buttons">
+                <a href="{{ notification.template_data.dashboard_url|default('#') }}" class="btn btn-primary">
+                    View Dashboard
+                </a>
+                <a href="{{ notification.template_data.chat_url|default('#') }}" class="btn btn-secondary">
+                    Chat with AI
+                </a>
+            </div>
+            
+            <p style="color: #6c757d; font-size: 14px; text-align: center;">
+                <strong>Priority:</strong> {{ notification.priority.value|title }} | 
+                <strong>Type:</strong> {{ notification.type.value|replace('_', ' ')|title }} |
+                <strong>Sent:</strong> {{ notification.created_at.strftime('%Y-%m-%d %H:%M UTC') }}
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated health alert from HealthMate.</p>
+            <p>If you have concerns about your health, please consult with a healthcare professional.</p>
+            <p>© 2024 HealthMate. All rights reserved.</p>
+            <p>
+                <a href="{{ notification.template_data.unsubscribe_url|default('#') }}" style="color: #6c757d;">
+                    Unsubscribe from health alerts
+                </a>
+            </p>
+        </div>
+    </div>
+</body>
+</html> 

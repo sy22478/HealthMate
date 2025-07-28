@@ -1,0 +1,39 @@
+HEALTHMATE ALERT
+================
+
+{{ notification.title }}
+
+{{ notification.message }}
+
+{% if notification.template_data %}
+HEALTH DATA SUMMARY:
+{% if notification.template_data.health_metrics %}
+{% for metric, value in notification.template_data.health_metrics.items() %}
+- {{ metric|title }}: {{ value }}
+{% endfor %}
+{% endif %}
+
+{% if notification.template_data.trend %}
+Trend: {{ notification.template_data.trend }}
+{% endif %}
+
+{% if notification.template_data.recommendation %}
+Recommendation: {{ notification.template_data.recommendation }}
+{% endif %}
+{% endif %}
+
+Priority: {{ notification.priority.value|title }}
+Type: {{ notification.type.value|replace('_', ' ')|title }}
+Sent: {{ notification.created_at.strftime('%Y-%m-%d %H:%M UTC') }}
+
+ACTIONS:
+- View Dashboard: {{ notification.template_data.dashboard_url|default('https://healthmate.com/dashboard') }}
+- Chat with AI: {{ notification.template_data.chat_url|default('https://healthmate.com/chat') }}
+
+---
+This is an automated health alert from HealthMate.
+If you have concerns about your health, please consult with a healthcare professional.
+
+© 2024 HealthMate. All rights reserved.
+
+To unsubscribe from health alerts, visit: {{ notification.template_data.unsubscribe_url|default('https://healthmate.com/unsubscribe') }} 
