@@ -38,4 +38,5 @@ scripts/
 tests/
 docs/
 *.md
-!README.md 
+!README.md
+requirements-railway.txt 

@@ -1,0 +1,16 @@
+{
+  "name": "healthmate",
+  "version": "1.0.0",
+  "description": "HealthMate - AI-powered healthcare application",
+  "main": "start.sh",
+  "scripts": {
+    "start": "./start.sh",
+    "build": "pip install -r requirements.txt"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["healthcare", "ai", "fastapi", "python"],
+  "author": "HealthMate Team",
+  "license": "MIT"
+} 
