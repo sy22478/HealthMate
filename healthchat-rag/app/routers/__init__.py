@@ -4,6 +4,8 @@ from .enhanced_chat import router as enhanced_chat_router
 from .health import router as health_router
 from .health_data import router as health_data_router
 from .analytics import router as analytics_router
+from .advanced_analytics import router as advanced_analytics_router
+from .visualization import router as visualization_router
 from .websocket import websocket_router
 from .database_optimization import router as database_optimization_router
 from .health_data_processing import router as health_data_processing_router

@@ -29,7 +29,7 @@ from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import get_db
-from app.routers import auth_router, chat_router, enhanced_chat_router, health_router, health_data_router, analytics_router, websocket_router, database_optimization_router, health_data_processing_router, vector_store_optimization_router, ai_processing_pipeline_router, user_modeling_router, predictive_analytics_router, performance_monitoring_router
+from app.routers import auth_router, chat_router, enhanced_chat_router, health_router, health_data_router, analytics_router, advanced_analytics_router, visualization_router, websocket_router, database_optimization_router, health_data_processing_router, vector_store_optimization_router, ai_processing_pipeline_router, user_modeling_router, predictive_analytics_router, performance_monitoring_router
 from app.routers.webhook_management import webhook_router
 from app.routers.data_pipeline import data_pipeline_router
 from app.routers.compliance import router as compliance_router
@@ -118,6 +118,8 @@ app.include_router(enhanced_chat_router, tags=["enhanced-chat"])
 app.include_router(health_router, prefix="/health", tags=["health"])
 app.include_router(health_data_router, tags=["health-data"])
 app.include_router(analytics_router, tags=["analytics"])
+app.include_router(advanced_analytics_router, tags=["advanced-analytics"])
+app.include_router(visualization_router, tags=["visualization"])
 app.include_router(websocket_router, tags=["websocket"])
 app.include_router(database_optimization_router, prefix="/database", tags=["database-optimization"])
 app.include_router(health_data_processing_router, tags=["health-data-processing"])
