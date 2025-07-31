@@ -13,11 +13,19 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      POSTGRES_URI: postgresql://postgres:test_password@localhost:5432/test_db  # pragma: allowlist secret
+      SECRET_KEY: test_secret_key_for_ci_cd  # pragma: allowlist secret
+      OPENAI_API_KEY: dummy_key  # pragma: allowlist secret
+      PINECONE_API_KEY: dummy_key  # pragma: allowlist secret
+      PINECONE_ENVIRONMENT: dummy_env  # pragma: allowlist secret
+      PINECONE_INDEX_NAME: dummy_index  # pragma: allowlist secret
+      HEALTHMATE_ENVIRONMENT: test
     services:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_PASSWORD: test_password
+          POSTGRES_PASSWORD: test_password  # pragma: allowlist secret
           POSTGRES_DB: test_db
         options: >-
           --health-cmd pg_isready
@@ -49,37 +57,32 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install pytest pytest-cov pytest-asyncio httpx
+        pip install python-json-logger
 
-    - name: Set up environment variables
-      env:
-        POSTGRES_URI: postgresql://postgres:test_password@localhost:5432/test_db
-        SECRET_KEY: test_secret_key_for_ci_cd  # pragma: allowlist secret
-        OPENAI_API_KEY: dummy_key  # pragma: allowlist secret
-        PINECONE_API_KEY: dummy_key  # pragma: allowlist secret
-        PINECONE_ENVIRONMENT: dummy_env  # pragma: allowlist secret
-        PINECONE_INDEX_NAME: dummy_index  # pragma: allowlist secret
-        HEALTHMATE_ENVIRONMENT: test
+    - name: Verify environment variables
       run: |
-        echo "Environment variables set for testing"
+        echo "Environment variables are set at job level"
+        echo "POSTGRES_URI: $POSTGRES_URI"
+        echo "SECRET_KEY: $SECRET_KEY"
+        echo "OPENAI_API_KEY: $OPENAI_API_KEY"
 
     - name: Run database migrations
       run: |
         cd healthchat-rag
         python -c "
+        import os
+        os.environ.setdefault('POSTGRES_URI', '${{ env.POSTGRES_URI }}')
+        os.environ.setdefault('SECRET_KEY', '${{ env.SECRET_KEY }}')
+        os.environ.setdefault('OPENAI_API_KEY', '${{ env.OPENAI_API_KEY }}')
+        os.environ.setdefault('PINECONE_API_KEY', '${{ env.PINECONE_API_KEY }}')
+        os.environ.setdefault('PINECONE_ENVIRONMENT', '${{ env.PINECONE_ENVIRONMENT }}')
+        os.environ.setdefault('PINECONE_INDEX_NAME', '${{ env.PINECONE_INDEX_NAME }}')
         from app.database import engine
         from app.models.user import Base
         Base.metadata.create_all(bind=engine)
         "
 
     - name: Run tests with coverage
-      env:
-        POSTGRES_URI: postgresql://postgres:test_password@localhost:5432/test_db
-        SECRET_KEY: test_secret_key_for_ci_cd  # pragma: allowlist secret
-        OPENAI_API_KEY: dummy_key  # pragma: allowlist secret
-        PINECONE_API_KEY: dummy_key  # pragma: allowlist secret
-        PINECONE_ENVIRONMENT: dummy_env  # pragma: allowlist secret
-        PINECONE_INDEX_NAME: dummy_index  # pragma: allowlist secret
-        HEALTHMATE_ENVIRONMENT: test
       run: |
         cd healthchat-rag
         pytest tests/ --cov=app --cov-report=term-missing --cov-report=xml
