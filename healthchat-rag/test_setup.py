@@ -8,14 +8,14 @@ import sys
 
 def setup_test_environment():
     """Set up test environment variables."""
-    # Set required environment variables
-    os.environ["OPENAI_API_KEY"] = "test-openai-key"
-    os.environ["PINECONE_API_KEY"] = "test-pinecone-key"
-    os.environ["PINECONE_ENVIRONMENT"] = "test-environment"
-    os.environ["PINECONE_INDEX_NAME"] = "test-index"
-    os.environ["POSTGRES_URI"] = "sqlite:///./test.db"
-    os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only"
-    os.environ["HEALTHMATE_ENVIRONMENT"] = "test"
+    # Set required environment variables (use CI values if available, otherwise use defaults)
+    os.environ["OPENAI_API_KEY"] = os.environ.get("OPENAI_API_KEY", "test-openai-key")
+    os.environ["PINECONE_API_KEY"] = os.environ.get("PINECONE_API_KEY", "test-pinecone-key")
+    os.environ["PINECONE_ENVIRONMENT"] = os.environ.get("PINECONE_ENVIRONMENT", "test-environment")
+    os.environ["PINECONE_INDEX_NAME"] = os.environ.get("PINECONE_INDEX_NAME", "test-index")
+    os.environ["POSTGRES_URI"] = os.environ.get("POSTGRES_URI", "sqlite:///./test.db")
+    os.environ["SECRET_KEY"] = os.environ.get("SECRET_KEY", "test-secret-key-for-testing-only")
+    os.environ["HEALTHMATE_ENVIRONMENT"] = os.environ.get("HEALTHMATE_ENVIRONMENT", "test")
     
     print("✅ Test environment variables set successfully")
     
