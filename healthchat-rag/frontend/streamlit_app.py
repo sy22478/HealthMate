@@ -49,7 +49,7 @@ def send_message(message: str):
     
     headers = {"Authorization": f"Bearer {st.session_state.token}"}
     response = requests.post(
-        "http://localhost:8003/chat/message",
+        f"{os.environ.get('HEALTHMATE_API_URL', 'http://localhost:8000')}/chat/message",
         json={"message": message},
         headers=headers,
         timeout=30
@@ -65,7 +65,7 @@ def send_message(message: str):
             # Retry with new token
             headers = {"Authorization": f"Bearer {st.session_state.token}"}
             response = requests.post(
-                "http://localhost:8003/chat/message",
+                f"{os.environ.get('HEALTHMATE_API_URL', 'http://localhost:8000')}/chat/message",
                 json={"message": message},
                 headers=headers,
                 timeout=30
@@ -84,7 +84,7 @@ def send_feedback(conversation_id: int, feedback: str):
     headers = {"Authorization": f"Bearer {st.session_state.token}"}
     data = {"conversation_id": conversation_id, "feedback": feedback}
     response = requests.post(
-        "http://localhost:8003/chat/feedback",
+        f"{os.environ.get('HEALTHMATE_API_URL', 'http://localhost:8000')}/chat/feedback",
         json=data,
         headers=headers,
         timeout=10
@@ -98,7 +98,7 @@ def fetch_history():
     
     headers = {"Authorization": f"Bearer {st.session_state.token}"}
     response = requests.get(
-        "http://localhost:8003/chat/history",
+        f"{os.environ.get('HEALTHMATE_API_URL', 'http://localhost:8000')}/chat/history",
         headers=headers,
         timeout=10
     )
