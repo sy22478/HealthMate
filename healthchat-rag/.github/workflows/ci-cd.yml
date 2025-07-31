@@ -84,6 +84,11 @@ jobs:
         Base.metadata.create_all(bind=engine)
         "
 
+    - name: Test environment setup
+      run: |
+        cd healthchat-rag
+        python test_setup.py
+
     - name: Run tests with coverage
       run: |
         cd healthchat-rag

@@ -19,13 +19,16 @@ from fastapi import FastAPI
 
 # Set up test environment variables before importing app
 import os
-os.environ.setdefault("OPENAI_API_KEY", "test-openai-key")
-os.environ.setdefault("PINECONE_API_KEY", "test-pinecone-key")
-os.environ.setdefault("PINECONE_ENVIRONMENT", "test-environment")
-os.environ.setdefault("PINECONE_INDEX_NAME", "test-index")
-os.environ.setdefault("POSTGRES_URI", "sqlite:///./test.db")
-os.environ.setdefault("SECRET_KEY", "test-secret-key-for-testing-only")  # pragma: allowlist secret
-os.environ.setdefault("HEALTHMATE_ENVIRONMENT", "test")
+import sys
+
+# Ensure environment variables are set before any imports
+os.environ["OPENAI_API_KEY"] = "test-openai-key"
+os.environ["PINECONE_API_KEY"] = "test-pinecone-key"
+os.environ["PINECONE_ENVIRONMENT"] = "test-environment"
+os.environ["PINECONE_INDEX_NAME"] = "test-index"
+os.environ["POSTGRES_URI"] = "sqlite:///./test.db"
+os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only"  # pragma: allowlist secret
+os.environ["HEALTHMATE_ENVIRONMENT"] = "test"
 
 # Import application components
 from app.database import get_db, Base
@@ -94,7 +97,7 @@ def client(db_session) -> Generator[TestClient, None, None]:
 @pytest.fixture
 def auth_service():
     """Create an AuthService instance for testing."""
-    return AuthService(secret_key="test-secret-key-for-testing-only")
+    return AuthService(secret_key="test-secret-key-for-testing-only")  # pragma: allowlist secret
 
 @pytest.fixture
 def sample_user_data() -> Dict[str, Any]:
