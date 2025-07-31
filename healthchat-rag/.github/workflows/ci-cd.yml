@@ -61,6 +61,9 @@ jobs:
         pip show python-json-logger
         python -c "import pythonjsonlogger; print('pythonjsonlogger imported successfully')"
         pip list | grep python
+        echo "=== Checking if pythonjsonlogger is available ==="
+        python -c "import sys; print('Python path:', sys.path)"
+        python -c "import pkg_resources; print('Installed packages:'); [print(f'  {d.project_name} {d.version}') for d in pkg_resources.working_set if 'python' in d.project_name.lower()]"
 
     - name: Verify environment variables
       run: |

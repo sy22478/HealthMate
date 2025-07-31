@@ -1,19 +1,29 @@
 from dotenv import load_dotenv
 import os
 import logging
-from pythonjsonlogger import jsonlogger
 
-# JSON logging configuration
-logHandler = logging.StreamHandler()
-formatter = jsonlogger.JsonFormatter(
-    fmt='%(asctime)s %(levelname)s %(name)s %(message)s %(correlation_id)s',
-    rename_fields={"asctime": "timestamp", "levelname": "level", "name": "logger", "message": "message"}
-)
-logHandler.setFormatter(formatter)
-rootLogger = logging.getLogger()
-rootLogger.handlers = []  # Remove any default handlers
-rootLogger.addHandler(logHandler)
-rootLogger.setLevel(logging.INFO)
+# Try to import pythonjsonlogger, fallback to standard logging if not available
+try:
+    from pythonjsonlogger import jsonlogger
+    # JSON logging configuration
+    logHandler = logging.StreamHandler()
+    formatter = jsonlogger.JsonFormatter(
+        fmt='%(asctime)s %(levelname)s %(name)s %(message)s %(correlation_id)s',
+        rename_fields={"asctime": "timestamp", "levelname": "level", "name": "logger", "message": "message"}
+    )
+    logHandler.setFormatter(formatter)
+    rootLogger = logging.getLogger()
+    rootLogger.handlers = []  # Remove any default handlers
+    rootLogger.addHandler(logHandler)
+    rootLogger.setLevel(logging.INFO)
+    print("✅ JSON logging configured successfully")
+except ImportError:
+    # Fallback to standard logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    print("⚠️  pythonjsonlogger not available, using standard logging")
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
 
