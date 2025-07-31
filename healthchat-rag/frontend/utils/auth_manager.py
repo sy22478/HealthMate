@@ -8,6 +8,7 @@ session handling, and authentication utilities for the HealthMate application.
 import streamlit as st
 import requests
 import json
+import os
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List
 import logging
@@ -21,7 +22,8 @@ class AuthManager:
     
     def __init__(self):
         """Initialize the authentication manager"""
-        self.api_base_url = "http://localhost:8003"
+        # Get API URL from environment variable or use default
+        self.api_base_url = os.environ.get("HEALTHMATE_API_URL", "http://localhost:8004")
         self.session_timeout_minutes = 60  # 1 hour session timeout
         self._initialize_session_state()
     
@@ -84,7 +86,15 @@ class AuthManager:
                 logger.info(f"User {email} logged in successfully")
                 return {"success": True, "message": "Login successful"}
             else:
-                error_msg = response.json().get("detail", "Login failed")
+                # Handle different error response formats
+                response_data = response.json()
+                if "error" in response_data:
+                    error_msg = response_data["error"].get("message", "Login failed")
+                elif "detail" in response_data:
+                    error_msg = response_data["detail"]
+                else:
+                    error_msg = "Login failed"
+                
                 logger.warning(f"Login failed for {email}: {error_msg}")
                 return {"success": False, "message": error_msg}
                 
@@ -92,12 +102,14 @@ class AuthManager:
             logger.error(f"Login request failed: {e}")
             return {"success": False, "message": "Connection error. Please try again."}
     
-    def register(self, email: str, password: str, full_name: str = None) -> Dict[str, Any]:
+    def register(self, email: str, password: str, full_name: str = None, age: int = None, role: str = "patient") -> Dict[str, Any]:
         """Register a new user"""
         try:
-            user_data = {"email": email, "password": password}
+            user_data = {"email": email, "password": password, "role": role}
             if full_name:
                 user_data["full_name"] = full_name
+            if age:
+                user_data["age"] = age
             
             response = requests.post(
                 f"{self.api_base_url}/auth/register",
@@ -111,7 +123,15 @@ class AuthManager:
                 logger.info(f"User {email} registered successfully")
                 return {"success": True, "message": "Registration successful"}
             else:
-                error_msg = response.json().get("detail", "Registration failed")
+                # Handle different error response formats
+                response_data = response.json()
+                if "error" in response_data:
+                    error_msg = response_data["error"].get("message", "Registration failed")
+                elif "detail" in response_data:
+                    error_msg = response_data["detail"]
+                else:
+                    error_msg = "Registration failed"
+                
                 logger.warning(f"Registration failed for {email}: {error_msg}")
                 return {"success": False, "message": error_msg}
                 
@@ -132,7 +152,15 @@ class AuthManager:
                 logger.info(f"Password reset requested for {email}")
                 return {"success": True, "message": "Password reset email sent"}
             else:
-                error_msg = response.json().get("detail", "Password reset failed")
+                # Handle different error response formats
+                response_data = response.json()
+                if "error" in response_data:
+                    error_msg = response_data["error"].get("message", "Password reset failed")
+                elif "detail" in response_data:
+                    error_msg = response_data["detail"]
+                else:
+                    error_msg = "Password reset failed"
+                
                 logger.warning(f"Password reset failed for {email}: {error_msg}")
                 return {"success": False, "message": error_msg}
                 
@@ -153,7 +181,15 @@ class AuthManager:
                 logger.info("Password reset successful")
                 return {"success": True, "message": "Password reset successful"}
             else:
-                error_msg = response.json().get("detail", "Password reset failed")
+                # Handle different error response formats
+                response_data = response.json()
+                if "error" in response_data:
+                    error_msg = response_data["error"].get("message", "Password reset failed")
+                elif "detail" in response_data:
+                    error_msg = response_data["detail"]
+                else:
+                    error_msg = "Password reset failed"
+                
                 logger.warning(f"Password reset failed: {error_msg}")
                 return {"success": False, "message": error_msg}
                 
@@ -162,48 +198,34 @@ class AuthManager:
             return {"success": False, "message": "Connection error. Please try again."}
     
     def _set_auth_state(self, auth_data: Dict[str, Any]):
-        """Set authentication state from API response"""
+        """Set authentication state in session"""
         st.session_state.authenticated = True
         st.session_state.token = auth_data.get("access_token")
-        st.session_state.user_email = auth_data.get("email")
-        st.session_state.user_id = auth_data.get("user_id")
+        st.session_state.refresh_token = auth_data.get("refresh_token")
+        st.session_state.user_email = auth_data.get("user", {}).get("email")
+        st.session_state.user_id = auth_data.get("user", {}).get("id")
+        st.session_state.user_role = auth_data.get("user", {}).get("role")
         st.session_state.login_time = datetime.now()
-        st.session_state.last_login = datetime.now().strftime('%Y-%m-%d %H:%M')
-        st.session_state.session_expires_at = datetime.now() + timedelta(minutes=self.session_timeout_minutes)
-        st.session_state.user_profile = auth_data.get("user_profile", {})
-        st.session_state.permissions = auth_data.get("permissions", [])
-        st.session_state.auth_error = None
-        st.session_state.auth_message = "Authentication successful"
-        st.session_state.auth_message_type = "success"
+        st.session_state.session_start = datetime.now()
+        
+        # Store user profile information
+        if "user" in auth_data:
+            st.session_state.user_profile = auth_data["user"]
     
     def logout(self):
-        """Logout user and clear all authentication state"""
-        logger.info(f"Logging out user {st.session_state.user_email}")
-        
-        # Clear all authentication state
-        auth_vars = [
-            'authenticated', 'token', 'user_email', 'user_id', 'login_time',
-            'last_login', 'session_expires_at', 'user_profile', 'permissions',
-            'auth_error', 'auth_message', 'auth_message_type'
+        """Logout user and clear session state"""
+        # Clear all authentication-related session state
+        auth_keys = [
+            'authenticated', 'token', 'refresh_token', 'user_email', 'user_id', 
+            'user_role', 'login_time', 'session_start', 'user_profile',
+            'just_logged_in', 'just_registered', 'current_page'
         ]
         
-        for var in auth_vars:
-            st.session_state[var] = None
+        for key in auth_keys:
+            if key in st.session_state:
+                del st.session_state[key]
         
-        # Clear dashboard state
-        dashboard_vars = [
-            'chat_history', 'current_page', 'show_logout_confirm', 'quick_action',
-            'emergency_active', 'emergency_message', 'emergency_recommendations'
-        ]
-        
-        for var in dashboard_vars:
-            if var in st.session_state:
-                if var == 'current_page':
-                    st.session_state[var] = 'Chat'
-                elif var in ['chat_history', 'show_logout_confirm', 'emergency_active']:
-                    st.session_state[var] = False
-                elif var in ['emergency_message', 'emergency_recommendations', 'quick_action']:
-                    st.session_state[var] = None
+        logger.info("User logged out successfully")
     
     def refresh_session(self) -> bool:
         """Refresh the current session if possible"""
@@ -256,7 +278,15 @@ class AuthManager:
         if not st.session_state.login_time:
             return "Unknown"
         
-        duration = datetime.now() - st.session_state.login_time
+        # Handle case where login_time might be a string (backward compatibility)
+        login_time = st.session_state.login_time
+        if isinstance(login_time, str):
+            try:
+                login_time = datetime.strptime(login_time, "%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                return "Unknown"
+        
+        duration = datetime.now() - login_time
         hours = int(duration.total_seconds() // 3600)
         minutes = int((duration.total_seconds() % 3600) // 60)
         
