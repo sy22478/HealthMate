@@ -1,0 +1,230 @@
+name: HealthMate CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  PYTHON_VERSION: '3.12'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov pytest-asyncio httpx
+
+    - name: Set up environment variables
+      env:
+        POSTGRES_URI: postgresql://postgres:test_password@localhost:5432/test_db
+        SECRET_KEY: test_secret_key_for_ci_cd  # pragma: allowlist secret
+        OPENAI_API_KEY: dummy_key  # pragma: allowlist secret
+        PINECONE_API_KEY: dummy_key  # pragma: allowlist secret
+        PINECONE_ENVIRONMENT: dummy_env  # pragma: allowlist secret
+        PINECONE_INDEX_NAME: dummy_index  # pragma: allowlist secret
+        HEALTHMATE_ENVIRONMENT: test
+      run: |
+        echo "Environment variables set for testing"
+
+    - name: Run database migrations
+      run: |
+        cd healthchat-rag
+        python -c "
+        from app.database import engine
+        from app.models.user import Base
+        Base.metadata.create_all(bind=engine)
+        "
+
+    - name: Run tests with coverage
+      env:
+        POSTGRES_URI: postgresql://postgres:test_password@localhost:5432/test_db
+        SECRET_KEY: test_secret_key_for_ci_cd  # pragma: allowlist secret
+        OPENAI_API_KEY: dummy_key  # pragma: allowlist secret
+        PINECONE_API_KEY: dummy_key  # pragma: allowlist secret
+        PINECONE_ENVIRONMENT: dummy_env  # pragma: allowlist secret
+        PINECONE_INDEX_NAME: dummy_index  # pragma: allowlist secret
+        HEALTHMATE_ENVIRONMENT: test
+      run: |
+        cd healthchat-rag
+        pytest tests/ --cov=app --cov-report=term-missing --cov-report=xml
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./healthchat-rag/coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install security tools
+      run: |
+        pip install bandit safety
+
+    - name: Run security scan with Bandit
+      run: |
+        cd healthchat-rag
+        bandit -r app/ -f json -o bandit-report.json || true
+
+    - name: Run dependency security check
+      run: |
+        safety check --json --output safety-report.json || true
+
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-reports
+        path: |
+          healthchat-rag/bandit-report.json
+          safety-report.json
+
+  lint:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install linting tools
+      run: |
+        pip install flake8 black isort mypy
+
+    - name: Run Black code formatter check
+      run: |
+        cd healthchat-rag
+        black --check --diff app/ tests/
+
+    - name: Run isort import sorting check
+      run: |
+        cd healthchat-rag
+        isort --check-only --diff app/ tests/
+
+    - name: Run flake8 linting
+      run: |
+        cd healthchat-rag
+        flake8 app/ tests/ --max-line-length=88 --extend-ignore=E203,W503
+
+    - name: Run mypy type checking
+      run: |
+        cd healthchat-rag
+        mypy app/ --ignore-missing-imports
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [test, security-scan, lint]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      run: |
+        cd healthchat-rag
+        docker build -t healthmate:latest .
+
+    - name: Upload Docker image
+      uses: actions/upload-artifact@v3
+      with:
+        name: docker-image
+        path: healthchat-rag/
+
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+
+    steps:
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Add staging deployment logic here
+        # This could be Railway, Heroku, or other platform
+
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    environment: production
+
+    steps:
+    - name: Deploy to production
+      run: |
+        echo "Deploying to production environment..."
+        # Add production deployment logic here
+        # This could be Railway, Heroku, or other platform
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always()
+
+    steps:
+    - name: Notify on success
+      if: success()
+      run: |
+        echo "✅ CI/CD Pipeline completed successfully!"
+        # Add notification logic (Slack, email, etc.)
+
+    - name: Notify on failure
+      if: failure()
+      run: |
+        echo "❌ CI/CD Pipeline failed!"
+        # Add failure notification logic 

@@ -17,6 +17,16 @@ from sqlalchemy.orm import sessionmaker, Session
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
 
+# Set up test environment variables before importing app
+import os
+os.environ.setdefault("OPENAI_API_KEY", "test-openai-key")
+os.environ.setdefault("PINECONE_API_KEY", "test-pinecone-key")
+os.environ.setdefault("PINECONE_ENVIRONMENT", "test-environment")
+os.environ.setdefault("PINECONE_INDEX_NAME", "test-index")
+os.environ.setdefault("POSTGRES_URI", "sqlite:///./test.db")
+os.environ.setdefault("SECRET_KEY", "test-secret-key-for-testing-only")  # pragma: allowlist secret
+os.environ.setdefault("HEALTHMATE_ENVIRONMENT", "test")
+
 # Import application components
 from app.database import get_db, Base
 from app.main import app
@@ -239,14 +249,14 @@ def temp_dir():
 def mock_env_vars():
     """Mock environment variables for testing."""
     env_vars = {
-        "SECRET_KEY": "test-secret-key-for-testing-only",
+        "SECRET_KEY": "test-secret-key-for-testing-only",  # pragma: allowlist secret
         "ALGORITHM": "HS256",
         "ACCESS_TOKEN_EXPIRE_MINUTES": "30",
         "REFRESH_TOKEN_EXPIRE_DAYS": "7",
         "DATABASE_URL": TEST_DATABASE_URL,
         "REDIS_URL": "redis://localhost:6379/0",
-        "OPENAI_API_KEY": "test-openai-key",
-        "PINECONE_API_KEY": "test-pinecone-key",
+        "OPENAI_API_KEY": "test-openai-key",  # pragma: allowlist secret
+        "PINECONE_API_KEY": "test-pinecone-key",  # pragma: allowlist secret
         "PINECONE_ENVIRONMENT": "test-environment",
         "ENCRYPTION_KEY": "test-encryption-key-32-bytes-long",
         "CORS_ALLOW_ORIGINS": "*"
