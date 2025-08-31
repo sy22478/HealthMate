@@ -26,7 +26,7 @@ class ChartDataResponse(BaseModel):
 class ChartExportRequest(BaseModel):
     chart_type: str = Field(..., description="Type of chart to export")
     days: int = Field(30, ge=1, le=365, description="Number of days of data")
-    format: str = Field("json", regex="^(json|csv)$", description="Export format")
+    format: str = Field("json", pattern="^(json|csv)$", description="Export format")
 
 # Visualization Endpoints
 

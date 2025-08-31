@@ -121,7 +121,7 @@ class SQLInjectionPrevention:
             )
         
         # Check for dangerous patterns first
-        if cls._contains_dangerous_patterns(str_value):
+        if cls.contains_dangerous_patterns(str_value):
             logger.warning(f"Potential SQL injection attempt detected: {str_value[:50]}...")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -139,7 +139,7 @@ class SQLInjectionPrevention:
         return str_value
     
     @classmethod
-    def _contains_dangerous_patterns(cls, value: str) -> bool:
+    def contains_dangerous_patterns(cls, value: str) -> bool:
         """
         Check if value contains dangerous SQL patterns
         
@@ -224,7 +224,7 @@ class SQLInjectionPrevention:
             HTTPException: If query contains dangerous patterns
         """
         # Check query for dangerous patterns
-        if cls._contains_dangerous_patterns(query):
+        if cls.contains_dangerous_patterns(query):
             logger.error(f"Dangerous SQL query detected: {query[:100]}...")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

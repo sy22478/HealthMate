@@ -109,7 +109,7 @@ def authenticate_user(email: str, password: str):
     """Authenticate user with backend"""
     try:
         response = requests.post(
-            f"{os.environ.get('HEALTHMATE_API_URL', 'http://localhost:8000')}/auth/login",
+            f"{os.environ.get('HEALTHMATE_API_URL', 'http://localhost:8003')}/auth/login",
             json={"email": email, "password": password},
             timeout=10
         )
@@ -130,7 +130,7 @@ def register_user(email, password, full_name, age, medical_conditions, medicatio
     """Register new user"""
     try:
         response = requests.post(
-            f"{os.environ.get('HEALTHMATE_API_URL', 'http://localhost:8000')}/auth/register",
+            f"{os.environ.get('HEALTHMATE_API_URL', 'http://localhost:8003')}/auth/register",
             json={
                 "email": email,
                 "password": password,
@@ -154,7 +154,7 @@ def request_password_reset(email: str):
     """Request password reset"""
     try:
         response = requests.post(
-            f"{os.environ.get('HEALTHMATE_API_URL', 'http://localhost:8000')}/auth/forgot-password",
+            f"{os.environ.get('HEALTHMATE_API_URL', 'http://localhost:8003')}/auth/forgot-password",
             json={"email": email},
             timeout=10
         )
@@ -171,7 +171,7 @@ def reset_password(token: str, new_password: str):
     """Reset password with token"""
     try:
         response = requests.post(
-            f"{os.environ.get('HEALTHMATE_API_URL', 'http://localhost:8000')}/auth/reset-password",
+            f"{os.environ.get('HEALTHMATE_API_URL', 'http://localhost:8003')}/auth/reset-password",
             json={"token": token, "new_password": new_password},
             timeout=10
         )

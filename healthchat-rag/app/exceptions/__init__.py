@@ -13,6 +13,7 @@ from .external_api_exceptions import ExternalAPIError, APIError, RateLimitError
 from .health_exceptions import HealthDataError, MedicalDataError
 from .chat_exceptions import ChatError, ConversationError
 from .notification_exceptions import NotificationError, EmailError, SMSError
+from .vector_store_exceptions import VectorStoreError
 
 __all__ = [
     # Base exceptions
@@ -47,6 +48,7 @@ __all__ = [
     # Chat exceptions
     "ChatError",
     "ConversationError",
+    "VectorStoreError",
     
     # Notification exceptions
     "NotificationError",

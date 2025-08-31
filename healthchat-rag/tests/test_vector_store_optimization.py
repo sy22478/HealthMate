@@ -16,7 +16,7 @@ from app.services.enhanced.vector_store_optimized import (
 from app.schemas.enhanced_health_schemas import (
     VectorSearchQuery, VectorSearchResult, DocumentUploadRequest
 )
-from app.exceptions.external_api_exceptions import VectorStoreError
+from app.exceptions import VectorStoreError
 
 class TestEnhancedVectorStore:
     """Test suite for EnhancedVectorStore"""

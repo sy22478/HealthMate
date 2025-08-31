@@ -24,7 +24,7 @@ from pydantic import BaseModel, HttpUrl, validator
 
 from app.database import get_db
 from app.models.user import User
-from app.services.auth import get_current_user
+from app.utils.auth_middleware import get_current_user
 from app.services.external_api_client import (
     ExternalAPIClient, APIConfig, OAuth2Config, AuthenticationType,
     WebhookEvent, WebhookManager

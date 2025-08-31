@@ -12,14 +12,14 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.user import User
-from app.services.auth import get_current_user
+from app.utils.auth_middleware import get_current_user
 from app.services.enhanced.business_intelligence import (
     get_business_intelligence_service, ReportType, AggregationPeriod,
     MetricType
 )
-from app.schemas.common_schemas import StandardResponse
-from app.utils.rate_limiting import rate_limit
-from app.utils.audit_logging import audit_logger
+from app.schemas.common_schemas import SuccessResponse
+from app.utils.rate_limiting import rate_limiter
+from app.utils.audit_logging import AuditLogger
 from app.exceptions.health_exceptions import BusinessIntelligenceError
 
 logger = logging.getLogger(__name__)
@@ -30,8 +30,7 @@ bi_router = APIRouter(prefix="/api/v1/business-intelligence", tags=["Business In
 # Security
 security = HTTPBearer()
 
-@bi_router.get("/health-metrics/aggregated", response_model=StandardResponse)
-@rate_limit(max_requests=10, window_seconds=3600)  # 10 requests per hour
+@bi_router.get("/health-metrics/aggregated", response_model=SuccessResponse)
 async def get_aggregated_health_metrics(
     period: AggregationPeriod = Query(AggregationPeriod.DAILY, description="Aggregation period"),
     start_date: datetime = Query(..., description="Start date for aggregation"),
@@ -39,7 +38,7 @@ async def get_aggregated_health_metrics(
     user_id: Optional[int] = Query(None, description="Specific user ID (admin only)"),
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
-) -> StandardResponse:
+) -> SuccessResponse:
     """
     Get aggregated health metrics for business intelligence.
     
@@ -96,7 +95,7 @@ async def get_aggregated_health_metrics(
                     logger.warning(f"Failed to aggregate metrics for user {user.id}: {e}")
         
         # Log access
-        audit_logger.log_data_access(
+        AuditLogger.log_data_access(
             user_id=current_user.id,
             data_type="aggregated_health_metrics",
             access_type="read",
@@ -108,8 +107,7 @@ async def get_aggregated_health_metrics(
             }
         )
         
-        return StandardResponse(
-            success=True,
+        return SuccessResponse(
             message="Aggregated health metrics retrieved successfully",
             data={
                 "metrics": metrics_data,
@@ -129,14 +127,13 @@ async def get_aggregated_health_metrics(
         logger.error(f"Error retrieving aggregated health metrics: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve aggregated health metrics: {str(e)}")
 
-@bi_router.get("/user-engagement", response_model=StandardResponse)
-@rate_limit(max_requests=10, window_seconds=3600)  # 10 requests per hour
+@bi_router.get("/user-engagement", response_model=SuccessResponse)
 async def get_user_engagement_metrics(
     date: datetime = Query(..., description="Date for engagement metrics"),
     user_id: Optional[int] = Query(None, description="Specific user ID (admin only)"),
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
-) -> StandardResponse:
+) -> SuccessResponse:
     """
     Get user engagement metrics for business intelligence.
     
@@ -189,7 +186,7 @@ async def get_user_engagement_metrics(
                     logger.warning(f"Failed to track engagement for user {user.id}: {e}")
         
         # Log access
-        audit_logger.log_data_access(
+        AuditLogger.log_data_access(
             user_id=current_user.id,
             data_type="user_engagement_metrics",
             access_type="read",
@@ -199,8 +196,7 @@ async def get_user_engagement_metrics(
             }
         )
         
-        return StandardResponse(
-            success=True,
+        return SuccessResponse(
             message="User engagement metrics retrieved successfully",
             data={
                 "engagement": engagement_data,
@@ -218,8 +214,7 @@ async def get_user_engagement_metrics(
         logger.error(f"Error retrieving user engagement metrics: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve user engagement metrics: {str(e)}")
 
-@bi_router.get("/system-performance", response_model=StandardResponse)
-@rate_limit(max_requests=20, window_seconds=3600)  # 20 requests per hour
+@bi_router.get("/system-performance", response_model=SuccessResponse)
 async def get_system_performance_metrics(
     service_name: Optional[str] = Query(None, description="Specific service name"),
     environment: str = Query("production", description="Environment"),
@@ -227,7 +222,7 @@ async def get_system_performance_metrics(
     end_time: datetime = Query(..., description="End time for metrics"),
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
-) -> StandardResponse:
+) -> SuccessResponse:
     """
     Get system performance metrics for business intelligence.
     
@@ -272,7 +267,7 @@ async def get_system_performance_metrics(
                     logger.warning(f"Failed to collect performance metrics for service {service}: {e}")
         
         # Log access
-        audit_logger.log_data_access(
+        AuditLogger.log_data_access(
             user_id=current_user.id,
             data_type="system_performance_metrics",
             access_type="read",
@@ -284,8 +279,7 @@ async def get_system_performance_metrics(
             }
         )
         
-        return StandardResponse(
-            success=True,
+        return SuccessResponse(
             message="System performance metrics retrieved successfully",
             data={
                 "performance": performance_data,
@@ -305,15 +299,14 @@ async def get_system_performance_metrics(
         logger.error(f"Error retrieving system performance metrics: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve system performance metrics: {str(e)}")
 
-@bi_router.post("/reports/generate", response_model=StandardResponse)
-@rate_limit(max_requests=5, window_seconds=3600)  # 5 requests per hour
+@bi_router.post("/reports/generate", response_model=SuccessResponse)
 async def generate_business_intelligence_report(
     report_type: ReportType,
     start_date: datetime,
     end_date: datetime,
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
-) -> StandardResponse:
+) -> SuccessResponse:
     """
     Generate business intelligence report.
     
@@ -342,7 +335,7 @@ async def generate_business_intelligence_report(
         )
         
         # Log report generation
-        audit_logger.log_system_action(
+        AuditLogger.log_system_action(
             action="bi_report_generated",
             user_id=current_user.id,
             details={
@@ -353,8 +346,7 @@ async def generate_business_intelligence_report(
             }
         )
         
-        return StandardResponse(
-            success=True,
+        return SuccessResponse(
             message="Business intelligence report generated successfully",
             data={
                 "report": {
@@ -380,8 +372,7 @@ async def generate_business_intelligence_report(
         logger.error(f"Error generating business intelligence report: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to generate business intelligence report: {str(e)}")
 
-@bi_router.get("/reports/list", response_model=StandardResponse)
-@rate_limit(max_requests=10, window_seconds=3600)  # 10 requests per hour
+@bi_router.get("/reports/list", response_model=SuccessResponse)
 async def list_business_intelligence_reports(
     report_type: Optional[ReportType] = Query(None, description="Filter by report type"),
     start_date: Optional[datetime] = Query(None, description="Filter by start date"),
@@ -390,7 +381,7 @@ async def list_business_intelligence_reports(
     offset: int = Query(0, description="Number of reports to skip"),
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
-) -> StandardResponse:
+) -> SuccessResponse:
     """
     List business intelligence reports.
     
@@ -445,7 +436,7 @@ async def list_business_intelligence_reports(
         reports = reports[offset:offset + limit]
         
         # Log access
-        audit_logger.log_data_access(
+        AuditLogger.log_data_access(
             user_id=current_user.id,
             data_type="business_intelligence_reports",
             access_type="read",
@@ -458,8 +449,7 @@ async def list_business_intelligence_reports(
             }
         )
         
-        return StandardResponse(
-            success=True,
+        return SuccessResponse(
             message="Business intelligence reports listed successfully",
             data={
                 "reports": reports,
@@ -475,12 +465,11 @@ async def list_business_intelligence_reports(
         logger.error(f"Error listing business intelligence reports: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to list business intelligence reports: {str(e)}")
 
-@bi_router.get("/dashboard/summary", response_model=StandardResponse)
-@rate_limit(max_requests=20, window_seconds=3600)  # 20 requests per hour
+@bi_router.get("/dashboard/summary", response_model=SuccessResponse)
 async def get_business_intelligence_dashboard_summary(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
-) -> StandardResponse:
+) -> SuccessResponse:
     """
     Get business intelligence dashboard summary.
     
@@ -526,15 +515,14 @@ async def get_business_intelligence_dashboard_summary(
         }
         
         # Log access
-        audit_logger.log_data_access(
+        AuditLogger.log_data_access(
             user_id=current_user.id,
             data_type="business_intelligence_dashboard",
             access_type="read",
             details={}
         )
         
-        return StandardResponse(
-            success=True,
+        return SuccessResponse(
             message="Business intelligence dashboard summary retrieved successfully",
             data=dashboard_summary
         )
