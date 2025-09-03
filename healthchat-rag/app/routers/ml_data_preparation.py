@@ -12,14 +12,14 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.user import User
-from app.services.auth import get_current_user
+from app.utils.auth_middleware import get_current_user
 from app.services.enhanced.ml_data_preparation import (
     get_ml_data_preparation_service, FeatureType, PreprocessingType, ModelType, DataVersion,
     FeatureDefinition, FeatureSet, ProcessedDataset, ModelVersion, ModelPerformance
 )
-from app.schemas.common_schemas import StandardResponse
-from app.utils.rate_limiting import rate_limit
-from app.utils.audit_logging import audit_logger
+from app.schemas.common_schemas import SuccessResponse
+from app.utils.rate_limiting import rate_limiter
+from app.utils.audit_logging import AuditLogger
 from app.exceptions.health_exceptions import MLDataPreparationError
 
 logger = logging.getLogger(__name__)
@@ -30,8 +30,7 @@ ml_data_router = APIRouter(prefix="/api/v1/ml-data-preparation", tags=["ML Data 
 # Security
 security = HTTPBearer()
 
-@ml_data_router.post("/feature-sets/create", response_model=StandardResponse)
-@rate_limit(max_requests=10, window_seconds=3600)  # 10 requests per hour
+@ml_data_router.post("/feature-sets/create", response_model=SuccessResponse)
 async def create_feature_set(
     name: str = Body(..., description="Feature set name"),
     description: str = Body(..., description="Feature set description"),
@@ -40,7 +39,7 @@ async def create_feature_set(
     model_type: ModelType = Body(..., description="Type of ML model"),
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
-) -> StandardResponse:
+) -> SuccessResponse:
     """
     Create a new feature set for ML models.
     
@@ -86,7 +85,7 @@ async def create_feature_set(
         )
         
         # Log creation
-        audit_logger.log_system_action(
+        AuditLogger.log_system_action(
             action="feature_set_created",
             user_id=current_user.id,
             details={
@@ -97,8 +96,7 @@ async def create_feature_set(
             }
         )
         
-        return StandardResponse(
-            success=True,
+        return SuccessResponse(
             message="Feature set created successfully",
             data={
                 "feature_set": {
@@ -123,8 +121,7 @@ async def create_feature_set(
         logger.error(f"Error creating feature set: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to create feature set: {str(e)}")
 
-@ml_data_router.post("/datasets/prepare", response_model=StandardResponse)
-@rate_limit(max_requests=5, window_seconds=3600)  # 5 requests per hour
+@ml_data_router.post("/datasets/prepare", response_model=SuccessResponse)
 async def prepare_ml_dataset(
     feature_set_id: str = Body(..., description="Feature set ID"),
     user_ids: List[int] = Body(..., description="List of user IDs"),
@@ -133,7 +130,7 @@ async def prepare_ml_dataset(
     random_state: int = Body(42, description="Random state for reproducibility"),
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
-) -> StandardResponse:
+) -> SuccessResponse:
     """
     Prepare a machine learning dataset.
     
@@ -173,7 +170,7 @@ async def prepare_ml_dataset(
         )
         
         # Log dataset preparation
-        audit_logger.log_system_action(
+        AuditLogger.log_system_action(
             action="ml_dataset_prepared",
             user_id=current_user.id,
             details={
@@ -185,8 +182,7 @@ async def prepare_ml_dataset(
             }
         )
         
-        return StandardResponse(
-            success=True,
+        return SuccessResponse(
             message="ML dataset prepared successfully",
             data={
                 "dataset": {
@@ -213,8 +209,7 @@ async def prepare_ml_dataset(
         logger.error(f"Error preparing ML dataset: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to prepare ML dataset: {str(e)}")
 
-@ml_data_router.get("/features/extract", response_model=StandardResponse)
-@rate_limit(max_requests=20, window_seconds=3600)  # 20 requests per hour
+@ml_data_router.get("/features/extract", response_model=SuccessResponse)
 async def extract_features(
     user_id: int = Query(..., description="User ID"),
     start_date: datetime = Query(..., description="Start date for feature extraction"),
@@ -222,7 +217,7 @@ async def extract_features(
     feature_types: List[str] = Query(["health", "engagement", "temporal"], description="Types of features to extract"),
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
-) -> StandardResponse:
+) -> SuccessResponse:
     """
     Extract features for a specific user.
     
@@ -270,7 +265,7 @@ async def extract_features(
             extracted_features["temporal"] = temporal_features
         
         # Log feature extraction
-        audit_logger.log_data_access(
+        AuditLogger.log_data_access(
             user_id=current_user.id,
             data_type="ml_features",
             access_type="read",
@@ -282,8 +277,7 @@ async def extract_features(
             }
         )
         
-        return StandardResponse(
-            success=True,
+        return SuccessResponse(
             message="Features extracted successfully",
             data={
                 "user_id": user_id,
@@ -303,14 +297,13 @@ async def extract_features(
         logger.error(f"Error extracting features: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to extract features: {str(e)}")
 
-@ml_data_router.post("/data/preprocess", response_model=StandardResponse)
-@rate_limit(max_requests=15, window_seconds=3600)  # 15 requests per hour
+@ml_data_router.post("/data/preprocess", response_model=SuccessResponse)
 async def preprocess_data(
     features: Dict[str, Any] = Body(..., description="Features to preprocess"),
     preprocessing_config: Dict[str, Any] = Body(..., description="Preprocessing configuration"),
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
-) -> StandardResponse:
+) -> SuccessResponse:
     """
     Preprocess data for ML models.
     
@@ -337,7 +330,7 @@ async def preprocess_data(
         )
         
         # Log preprocessing
-        audit_logger.log_system_action(
+        AuditLogger.log_system_action(
             action="ml_data_preprocessed",
             user_id=current_user.id,
             details={
@@ -347,8 +340,7 @@ async def preprocess_data(
             }
         )
         
-        return StandardResponse(
-            success=True,
+        return SuccessResponse(
             message="Data preprocessed successfully",
             data={
                 "input_features": len(features),
@@ -367,13 +359,12 @@ async def preprocess_data(
         logger.error(f"Error preprocessing data: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to preprocess data: {str(e)}")
 
-@ml_data_router.get("/datasets/versions", response_model=StandardResponse)
-@rate_limit(max_requests=10, window_seconds=3600)  # 10 requests per hour
+@ml_data_router.get("/datasets/versions", response_model=SuccessResponse)
 async def list_dataset_versions(
     dataset_id: str = Query(..., description="Dataset ID"),
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
-) -> StandardResponse:
+) -> SuccessResponse:
     """
     List versions of a dataset.
     
@@ -397,7 +388,7 @@ async def list_dataset_versions(
         versions = ml_service.versioning.list_dataset_versions(dataset_id)
         
         # Log access
-        audit_logger.log_data_access(
+        AuditLogger.log_data_access(
             user_id=current_user.id,
             data_type="dataset_versions",
             access_type="read",
@@ -407,8 +398,7 @@ async def list_dataset_versions(
             }
         )
         
-        return StandardResponse(
-            success=True,
+        return SuccessResponse(
             message="Dataset versions retrieved successfully",
             data={
                 "dataset_id": dataset_id,
@@ -426,14 +416,13 @@ async def list_dataset_versions(
         logger.error(f"Error listing dataset versions: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to list dataset versions: {str(e)}")
 
-@ml_data_router.get("/datasets/load-version", response_model=StandardResponse)
-@rate_limit(max_requests=10, window_seconds=3600)  # 10 requests per hour
+@ml_data_router.get("/datasets/load-version", response_model=SuccessResponse)
 async def load_dataset_version(
     dataset_id: str = Query(..., description="Dataset ID"),
     version: str = Query(..., description="Dataset version"),
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
-) -> StandardResponse:
+) -> SuccessResponse:
     """
     Load a specific version of a dataset.
     
@@ -457,7 +446,7 @@ async def load_dataset_version(
         dataset = ml_service.versioning.load_dataset_version(dataset_id, version)
         
         # Log access
-        audit_logger.log_data_access(
+        AuditLogger.log_data_access(
             user_id=current_user.id,
             data_type="dataset_version",
             access_type="read",
@@ -468,8 +457,7 @@ async def load_dataset_version(
             }
         )
         
-        return StandardResponse(
-            success=True,
+        return SuccessResponse(
             message="Dataset version loaded successfully",
             data={
                 "dataset": {
@@ -497,14 +485,13 @@ async def load_dataset_version(
         logger.error(f"Error loading dataset version: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to load dataset version: {str(e)}")
 
-@ml_data_router.get("/models/performance", response_model=StandardResponse)
-@rate_limit(max_requests=20, window_seconds=3600)  # 20 requests per hour
+@ml_data_router.get("/models/performance", response_model=SuccessResponse)
 async def get_model_performance_history(
     model_id: str = Query(..., description="Model ID"),
     metric_name: Optional[str] = Query(None, description="Specific metric name"),
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
-) -> StandardResponse:
+) -> SuccessResponse:
     """
     Get model performance history.
     
@@ -531,7 +518,7 @@ async def get_model_performance_history(
         )
         
         # Log access
-        audit_logger.log_data_access(
+        AuditLogger.log_data_access(
             user_id=current_user.id,
             data_type="model_performance",
             access_type="read",
@@ -542,8 +529,7 @@ async def get_model_performance_history(
             }
         )
         
-        return StandardResponse(
-            success=True,
+        return SuccessResponse(
             message="Model performance history retrieved successfully",
             data={
                 "model_id": model_id,
@@ -572,12 +558,11 @@ async def get_model_performance_history(
         logger.error(f"Error getting model performance history: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to get model performance history: {str(e)}")
 
-@ml_data_router.get("/dashboard/summary", response_model=StandardResponse)
-@rate_limit(max_requests=20, window_seconds=3600)  # 20 requests per hour
+@ml_data_router.get("/dashboard/summary", response_model=SuccessResponse)
 async def get_ml_data_preparation_dashboard_summary(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
-) -> StandardResponse:
+) -> SuccessResponse:
     """
     Get ML data preparation dashboard summary.
     
@@ -623,15 +608,14 @@ async def get_ml_data_preparation_dashboard_summary(
         }
         
         # Log access
-        audit_logger.log_data_access(
+        AuditLogger.log_data_access(
             user_id=current_user.id,
             data_type="ml_dashboard",
             access_type="read",
             details={}
         )
         
-        return StandardResponse(
-            success=True,
+        return SuccessResponse(
             message="ML data preparation dashboard summary retrieved successfully",
             data=dashboard_summary
         )

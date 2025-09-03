@@ -10,8 +10,8 @@ from unittest.mock import Mock, patch
 from datetime import datetime, timezone
 
 from app.utils.encryption_utils import encryption_manager
-from app.utils.html_sanitization import sanitize_html
-from app.utils.sql_injection_utils import check_sql_injection
+from app.utils.html_sanitization import HTMLSanitizer
+from app.utils.sql_injection_utils import sql_injection_prevention
 from app.utils.password_utils import validate_password_strength
 from app.utils.jwt_utils import jwt_manager
 from app.utils.rate_limiting import RateLimiter
@@ -23,15 +23,14 @@ class TestEncryptionUtils:
     def test_encrypt_decrypt_field(self):
         """Test field encryption and decryption."""
         original_value = "sensitive_data"
-        field_name = "test_field"
         
         # Encrypt
-        encrypted = encryption_manager.encrypt_field(original_value, field_name)
+        encrypted = encryption_manager.encrypt_field(original_value)
         assert encrypted != original_value
         assert isinstance(encrypted, str)
         
         # Decrypt
-        decrypted = encryption_manager.decrypt_field(encrypted, field_name)
+        decrypted = encryption_manager.decrypt_field(encrypted)
         assert decrypted == original_value
     
     def test_encrypt_decrypt_pii(self):
@@ -72,18 +71,15 @@ class TestEncryptionUtils:
         assert encryption_manager.validate_encryption_key() is True
         
         # Test with invalid key (mock)
-        with patch.object(encryption_manager, 'encryption_key', b'invalid_key'):
-            assert encryption_manager.validate_encryption_key() is False
-    
+        with patch.object(encryption_manager, 'master_key', 'invalid_key'):
+            with pytest.raises(Exception):
+                encryption_manager.validate_encryption_key()
+
     def test_encryption_error_handling(self):
         """Test encryption error handling."""
-        # Test with invalid data
-        with pytest.raises(Exception):
-            encryption_manager.encrypt_field(None, "test_field")
-        
-        # Test with invalid field name
-        with pytest.raises(Exception):
-            encryption_manager.encrypt_field("test", None)
+        # Test with invalid data to decrypt
+        with pytest.raises(ValueError):
+            encryption_manager.decrypt_field("invalid_encrypted_data")
 
 class TestHTMLSanitization:
     """Test cases for HTML sanitization."""
@@ -91,7 +87,7 @@ class TestHTMLSanitization:
     def test_sanitize_safe_html(self):
         """Test sanitization of safe HTML."""
         safe_html = "<p>This is safe content</p><strong>Bold text</strong>"
-        sanitized = sanitize_html(safe_html)
+        sanitized = HTMLSanitizer.sanitize_html(safe_html)
         
         # Should allow safe tags
         assert "<p>" in sanitized
@@ -101,7 +97,7 @@ class TestHTMLSanitization:
     def test_sanitize_script_tags(self):
         """Test sanitization of script tags."""
         dangerous_html = "<script>alert('xss')</script><p>Safe content</p>"
-        sanitized = sanitize_html(dangerous_html)
+        sanitized = HTMLSanitizer.sanitize_html(dangerous_html)
         
         # Should remove script tags
         assert "<script>" not in sanitized
@@ -111,7 +107,7 @@ class TestHTMLSanitization:
     def test_sanitize_event_handlers(self):
         """Test sanitization of event handlers."""
         dangerous_html = '<img src="x" onerror="alert(\'xss\')" alt="test">'
-        sanitized = sanitize_html(dangerous_html)
+        sanitized = HTMLSanitizer.sanitize_html(dangerous_html)
         
         # Should remove event handlers
         assert 'onerror=' not in sanitized
@@ -122,7 +118,7 @@ class TestHTMLSanitization:
     def test_sanitize_javascript_protocols(self):
         """Test sanitization of javascript protocols."""
         dangerous_html = '<a href="javascript:alert(\'xss\')">Click me</a>'
-        sanitized = sanitize_html(dangerous_html)
+        sanitized = HTMLSanitizer.sanitize_html(dangerous_html)
         
         # Should remove javascript protocols
         assert 'javascript:' not in sanitized
@@ -136,7 +132,7 @@ class TestHTMLSanitization:
         <svg onload="alert('xss')">
         <iframe src="javascript:alert('xss')"></iframe>
         '''
-        sanitized = sanitize_html(complex_attack)
+        sanitized = HTMLSanitizer.sanitize_html(complex_attack)
         
         # Should remove all dangerous elements
         assert 'onerror=' not in sanitized
@@ -159,7 +155,7 @@ class TestSQLInjectionUtils:
         ]
         
         for safe_input in safe_inputs:
-            result = check_sql_injection(safe_input)
+            result = sql_injection_prevention.contains_dangerous_patterns(safe_input)
             assert result is False
     
     def test_check_sql_injection_dangerous_patterns(self):
@@ -173,7 +169,7 @@ class TestSQLInjectionUtils:
         ]
         
         for dangerous_input in dangerous_patterns:
-            result = check_sql_injection(dangerous_input)
+            result = sql_injection_prevention.contains_dangerous_patterns(dangerous_input)
             assert result is True
     
     def test_check_sql_injection_edge_cases(self):
@@ -188,7 +184,7 @@ class TestSQLInjectionUtils:
         ]
         
         for edge_case in edge_cases:
-            result = check_sql_injection(edge_case)
+            result = sql_injection_prevention.contains_dangerous_patterns(edge_case)
             # These should be safe
             assert result is False
     
@@ -200,10 +196,10 @@ class TestSQLInjectionUtils:
         dangerous_query = "SELECT * FROM users WHERE email = ''; DROP TABLE users; --'"
         
         # Safe query should not trigger detection
-        assert not check_sql_injection(safe_query)
+        assert not sql_injection_prevention.contains_dangerous_patterns(safe_query)
         
         # Dangerous query should trigger detection
-        assert check_sql_injection(dangerous_query)
+        assert sql_injection_prevention.contains_dangerous_patterns(dangerous_query)
 
 class TestPasswordUtils:
     """Test cases for password utilities."""

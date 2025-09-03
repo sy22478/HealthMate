@@ -254,5 +254,18 @@ class PasswordManager:
         """
         return self.hash_reset_token(plain_token) == hashed_token
 
+def validate_password_strength(password: str) -> bool:
+    """
+    Validate password strength.
+
+    Args:
+        password: Password to validate
+
+    Returns:
+        True if password is valid, False otherwise
+    """
+    is_valid, _ = password_manager.validator.validate_password(password)
+    return is_valid
+
 # Global password manager instance
 password_manager = PasswordManager() 

@@ -64,4 +64,53 @@ class QueryError(DatabaseError):
             query=query,
             details=details or {"parameters": parameters}
         )
-        self.parameters = parameters 
+        self.parameters = parameters
+
+
+class DatabaseBackupError(DatabaseError):
+    """Exception raised for database backup errors."""
+
+    def __init__(
+        self,
+        message: str,
+        backup_id: Optional[str] = None,
+        details: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code=ErrorCode.DATABASE_BACKUP_ERROR,
+            details=details or {"backup_id": backup_id}
+        )
+        self.backup_id = backup_id
+
+
+class DatabaseFailoverError(DatabaseError):
+    """Exception raised for database failover errors."""
+
+    def __init__(
+        self,
+        message: str,
+        details: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code=ErrorCode.DATABASE_FAILOVER_ERROR,
+            details=details
+        )
+
+
+class DatabaseRestoreError(DatabaseError):
+    """Exception raised for database restore errors."""
+
+    def __init__(
+        self,
+        message: str,
+        backup_id: Optional[str] = None,
+        details: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code=ErrorCode.DATABASE_RESTORE_ERROR,
+            details=details or {"backup_id": backup_id}
+        )
+        self.backup_id = backup_id

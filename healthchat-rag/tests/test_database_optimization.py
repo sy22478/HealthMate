@@ -14,7 +14,7 @@ from unittest.mock import Mock, patch, MagicMock
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.models.database_optimization import DatabaseOptimizer, analyze_database_performance
+from app.models.database_optimization import DatabaseOptimizer
 from app.models.database_migrations import DatabaseMigration, run_database_optimization_migrations
 from app.models.database_constraints import DatabaseConstraints, DataValidators, ConstraintEnforcement, validate_database_integrity
 
@@ -612,28 +612,13 @@ class TestDatabaseOptimizationIntegration:
     
     def test_analyze_database_performance(self, mock_db_session):
         """Test comprehensive database performance analysis."""
-        with patch('app.models.database_optimization.DatabaseOptimizer') as mock_optimizer_class:
-            mock_optimizer = Mock()
-            mock_optimizer_class.return_value = mock_optimizer
+        optimizer = DatabaseOptimizer(mock_db_session)
+        with patch.object(optimizer, 'analyze_table_indexes', return_value={'recommendations': []}), \
+             patch.object(optimizer, 'analyze_slow_queries', return_value=[]), \
+             patch.object(optimizer, 'optimize_connection_pooling', return_value={'recommendations': []}), \
+             patch.object(optimizer, 'get_performance_trends', return_value=[]):
             
-            # Mock the analysis methods
-            mock_optimizer.analyze_table_indexes.return_value = {
-                'table_name': 'users',
-                'recommendations': []
-            }
-            mock_optimizer.analyze_slow_queries.return_value = []
-            mock_optimizer.optimize_connection_pooling.return_value = {'recommendations': []}
-            mock_optimizer.get_performance_trends.return_value = []
-            mock_optimizer.generate_optimization_report.return_value = {
-                'timestamp': '2024-01-01T00:00:00Z',
-                'index_analysis': {},
-                'slow_queries': [],
-                'connection_pooling': {},
-                'performance_trends': {},
-                'recommendations': []
-            }
-            
-            report = analyze_database_performance(mock_db_session)
+            report = optimizer.generate_optimization_report()
             
             assert 'timestamp' in report
             assert 'index_analysis' in report

@@ -23,7 +23,7 @@ class AuthManager:
     def __init__(self):
         """Initialize the authentication manager"""
         # Get API URL from environment variable or use default
-        self.api_base_url = os.environ.get("HEALTHMATE_API_URL", "http://localhost:8000")
+        self.api_base_url = os.environ.get("HEALTHMATE_API_URL", "http://localhost:8003")
         self.session_timeout_minutes = 60  # 1 hour session timeout
         self._initialize_session_state()
     

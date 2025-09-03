@@ -24,6 +24,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 from app.exceptions.external_api_exceptions import ExternalAPIError
+from app.exceptions import VectorStoreError
 from app.utils.encryption_utils import field_encryption
 
 logger = logging.getLogger(__name__)

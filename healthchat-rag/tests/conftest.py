@@ -6,6 +6,17 @@ for running comprehensive tests across the HealthMate application.
 """
 
 import pytest
+from unittest.mock import patch, Mock
+
+def pytest_configure(config):
+    """Configure pytest and apply mocks before test collection."""
+    # Mock Pinecone
+    pinecone_patcher = patch('pinecone.Pinecone')
+    mock_pinecone_class = pinecone_patcher.start()
+    mock_instance = mock_pinecone_class.return_value
+    mock_instance.list_indexes.return_value = []
+    mock_instance.Index.return_value = Mock()
+    config.add_cleanup(pinecone_patcher.stop)
 import asyncio
 import tempfile
 import os
@@ -21,23 +32,10 @@ from fastapi import FastAPI
 import os
 import sys
 
-# Ensure environment variables are set before any imports
-os.environ["OPENAI_API_KEY"] = "test-openai-key"
-os.environ["PINECONE_API_KEY"] = "test-pinecone-key"
-os.environ["PINECONE_ENVIRONMENT"] = "test-environment"
-os.environ["PINECONE_INDEX_NAME"] = "test-index"
-os.environ["POSTGRES_URI"] = "sqlite:///./test.db"
-os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only"  # pragma: allowlist secret
-os.environ["HEALTHMATE_ENVIRONMENT"] = "test"
+# Environment variables are now set in pytest.ini
 
-# Import application components
-from app.database import get_db, Base
-from app.main import app
-from app.models.user import User
-from app.models.health_data import HealthData
-from app.services.auth import AuthService
-from app.utils.jwt_utils import jwt_manager
-from app.utils.encryption_utils import encryption_manager
+# Application components are imported inside fixtures to avoid circular dependencies
+# and to ensure mocks are applied before application code is loaded.
 
 # Test database configuration
 TEST_DATABASE_URL = "sqlite:///./test.db"
@@ -62,6 +60,7 @@ def test_engine():
 @pytest.fixture(scope="session")
 def test_db_setup(test_engine):
     """Setup test database tables."""
+    from app.database import Base
     Base.metadata.create_all(bind=test_engine)
     yield
     Base.metadata.drop_all(bind=test_engine)
@@ -83,6 +82,8 @@ def db_session(test_engine, test_db_setup):
 @pytest.fixture
 def client(db_session) -> Generator[TestClient, None, None]:
     """Create a test client with database dependency override."""
+    from app.main import app
+    from app.database import get_db
     def override_get_db():
         try:
             yield db_session
@@ -97,6 +98,7 @@ def client(db_session) -> Generator[TestClient, None, None]:
 @pytest.fixture
 def auth_service():
     """Create an AuthService instance for testing."""
+    from app.services.auth import AuthService
     return AuthService(secret_key="test-secret-key-for-testing-only")  # pragma: allowlist secret
 
 @pytest.fixture
@@ -113,8 +115,9 @@ def sample_user_data() -> Dict[str, Any]:
     }
 
 @pytest.fixture
-def sample_user(db_session, sample_user_data, auth_service) -> User:
+def sample_user(db_session, sample_user_data, auth_service) -> "User":
     """Create a sample user in the test database."""
+    from app.models.user import User
     user = User(
         email=sample_user_data["email"],
         hashed_password=auth_service.get_password_hash(sample_user_data["password"]),
@@ -143,8 +146,9 @@ def admin_user_data() -> Dict[str, Any]:
     }
 
 @pytest.fixture
-def admin_user(db_session, admin_user_data, auth_service) -> User:
+def admin_user(db_session, admin_user_data, auth_service) -> "User":
     """Create an admin user in the test database."""
+    from app.models.user import User
     user = User(
         email=admin_user_data["email"],
         hashed_password=auth_service.get_password_hash(admin_user_data["password"]),
@@ -206,8 +210,9 @@ def sample_health_data() -> Dict[str, Any]:
     }
 
 @pytest.fixture
-def sample_health_record(db_session, sample_user, sample_health_data) -> HealthData:
+def sample_health_record(db_session, sample_user, sample_health_data) -> "HealthData":
     """Create a sample health data record in the test database."""
+    from app.models.health_data import HealthData
     health_data = HealthData(
         user_id=sample_user.id,
         data_type=sample_health_data["data_type"],
@@ -273,8 +278,10 @@ class TestUtils:
     """Utility functions for tests."""
     
     @staticmethod
-    def create_test_user(db_session: Session, **kwargs) -> User:
+    def create_test_user(db_session: Session, **kwargs) -> "User":
         """Create a test user with custom attributes."""
+        from app.models.user import User
+        from app.services.auth import AuthService
         default_data = {
             "email": f"test{kwargs.get('id', 1)}@example.com",
             "password": "TestPassword123!",
@@ -301,8 +308,9 @@ class TestUtils:
         return user
     
     @staticmethod
-    def create_test_health_data(db_session: Session, user_id: int, **kwargs) -> HealthData:
+    def create_test_health_data(db_session: Session, user_id: int, **kwargs) -> "HealthData":
         """Create test health data with custom attributes."""
+        from app.models.health_data import HealthData
         default_data = {
             "data_type": "blood_pressure",
             "value": "120/80",

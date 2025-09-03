@@ -62,7 +62,8 @@ from app.models.enhanced_health_models import (
 from app.services.enhanced.data_integration import (
     DataIntegrationService, HealthDataPoint, DataType, DataSourceType
 )
-from app.exceptions.health_exceptions import DataProcessingError, ValidationError
+from pydantic import ValidationError
+from app.exceptions.health_exceptions import DataProcessingError
 from app.utils.audit_logging import AuditLogger
 
 logger = logging.getLogger(__name__)

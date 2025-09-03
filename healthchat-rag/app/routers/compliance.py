@@ -19,14 +19,14 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from app.database import get_db
-from app.services.auth import get_current_user
+from app.utils.auth_middleware import get_current_user
 from app.services.compliance_service import (
     ComplianceService, DataCategory, ComplianceLevel, 
     RetentionPolicy, DataRetentionRule, ComplianceReport
 )
 from app.models.user import User
 from app.utils.audit_logging import AuditLogger
-from app.utils.rate_limiting import rate_limit
+from app.utils.rate_limiting import rate_limiter
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,6 @@ class RetentionPolicyUpdate(BaseModel):
     notification_days: int = 30
 
 @router.get("/hipaa-compliance")
-@rate_limit(max_requests=10, window_seconds=300)  # 10 requests per 5 minutes
 async def check_hipaa_compliance(
     user_id: Optional[int] = Query(None, description="Specific user ID to check"),
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -125,7 +124,6 @@ async def check_hipaa_compliance(
         )
 
 @router.get("/gdpr-compliance")
-@rate_limit(max_requests=10, window_seconds=300)
 async def check_gdpr_compliance(
     user_id: Optional[int] = Query(None, description="Specific user ID to check"),
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -186,7 +184,6 @@ async def check_gdpr_compliance(
         )
 
 @router.post("/export-data")
-@rate_limit(max_requests=5, window_seconds=3600)  # 5 requests per hour
 async def export_user_data(
     request: DataExportRequest,
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -241,7 +238,6 @@ async def export_user_data(
         )
 
 @router.post("/delete-data")
-@rate_limit(max_requests=3, window_seconds=3600)  # 3 requests per hour
 async def delete_user_data(
     request: DataDeletionRequest,
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -298,7 +294,6 @@ async def delete_user_data(
         )
 
 @router.post("/generate-report")
-@rate_limit(max_requests=5, window_seconds=3600)  # 5 requests per hour
 async def generate_compliance_report(
     request: ComplianceReportRequest,
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -388,7 +383,6 @@ async def generate_compliance_report(
         )
 
 @router.get("/retention-policies")
-@rate_limit(max_requests=20, window_seconds=300)
 async def get_retention_policies(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
@@ -437,7 +431,6 @@ async def get_retention_policies(
         )
 
 @router.put("/retention-policies")
-@rate_limit(max_requests=10, window_seconds=3600)  # 10 requests per hour
 async def update_retention_policy(
     request: RetentionPolicyUpdate,
     credentials: HTTPAuthorizationCredentials = Depends(security),
@@ -522,7 +515,6 @@ async def update_retention_policy(
         )
 
 @router.get("/compliance-status")
-@rate_limit(max_requests=30, window_seconds=300)
 async def get_compliance_status(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)

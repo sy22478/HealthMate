@@ -138,7 +138,7 @@ class Settings(BaseSettings):
         return config
 
     class Config:
-        env_file = ".env"
+        env_file = os.path.join(os.path.dirname(__file__), "..", ".env")
         env_prefix = "HEALTHMATE_"
 
 settings = Settings() 

@@ -69,4 +69,20 @@ class MLDataPreparationError(HealthMateException):
     """Exception raised for ML data preparation related errors"""
     def __init__(self, message: str, error_code: str = "ML_DATA_PREP_ERROR", details: Dict[str, Any] = None):
         super().__init__(message, error_code, details)
-        self.error_type = "MLDataPreparationError" 
+        self.error_type = "MLDataPreparationError"
+
+class DataProcessingError(HealthDataError):
+    """Exception raised for data processing errors."""
+
+    def __init__(
+        self,
+        message: str = "Data processing failed",
+        pipeline_stage: Optional[str] = None,
+        details: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code=ErrorCode.DATA_CORRUPTION, # Or a more specific error code
+            details=details or {"pipeline_stage": pipeline_stage}
+        )
+        self.pipeline_stage = pipeline_stage

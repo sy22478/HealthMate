@@ -29,7 +29,7 @@ from cryptography.fernet import Fernet
 from botocore.exceptions import ClientError, NoCredentialsError
 
 from app.config import Settings
-from app.utils.encryption_utils import EncryptionUtils
+from app.utils.encryption_utils import EncryptionManager
 from app.exceptions.database_exceptions import DatabaseBackupError
 from app.exceptions.external_api_exceptions import StorageServiceError
 
@@ -41,7 +41,7 @@ class BackupService:
     
     def __init__(self, settings: Settings):
         self.settings = settings
-        self.encryption_utils = EncryptionUtils(settings)
+        self.encryption_utils = EncryptionManager(settings.secret_key)
         self.backup_config = self._load_backup_config()
         
         # Initialize storage clients
