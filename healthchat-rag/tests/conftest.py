@@ -21,13 +21,13 @@ from fastapi import FastAPI
 import os
 import sys
 
-# Ensure environment variables are set before any imports
-os.environ["OPENAI_API_KEY"] = "test-openai-key"
-os.environ["PINECONE_API_KEY"] = "test-pinecone-key"
-os.environ["PINECONE_ENVIRONMENT"] = "test-environment"
-os.environ["PINECONE_INDEX_NAME"] = "test-index"
-os.environ["POSTGRES_URI"] = "sqlite:///./test.db"
-os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only"  # pragma: allowlist secret
+# Ensure environment variables are set before any imports (with HEALTHMATE_ prefix)
+os.environ["HEALTHMATE_OPENAI_API_KEY"] = "test-openai-key"  # pragma: allowlist secret
+os.environ["HEALTHMATE_PINECONE_API_KEY"] = "test-pinecone-key"  # pragma: allowlist secret
+os.environ["HEALTHMATE_PINECONE_ENVIRONMENT"] = "test-environment"
+os.environ["HEALTHMATE_PINECONE_INDEX_NAME"] = "test-index"
+os.environ["HEALTHMATE_POSTGRES_URI"] = "sqlite:///./test.db"
+os.environ["HEALTHMATE_SECRET_KEY"] = "test-secret-key-for-testing-only"  # pragma: allowlist secret
 os.environ["HEALTHMATE_ENVIRONMENT"] = "test"
 
 # Import application components
@@ -104,7 +104,7 @@ def sample_user_data() -> Dict[str, Any]:
     """Sample user data for testing."""
     return {
         "email": "test@example.com",
-        "password": "TestPassword123!",
+        "password": "TestPassword123!",  # pragma: allowlist secret
         "full_name": "Test User",
         "age": 30,
         "medical_conditions": "None",
@@ -134,7 +134,7 @@ def admin_user_data() -> Dict[str, Any]:
     """Admin user data for testing."""
     return {
         "email": "admin@example.com",
-        "password": "AdminPassword123!",
+        "password": "AdminPassword123!",  # pragma: allowlist secret
         "full_name": "Admin User",
         "age": 35,
         "medical_conditions": "None",
@@ -165,7 +165,7 @@ def authenticated_client(client, sample_user) -> TestClient:
     # Login to get tokens
     login_data = {
         "email": sample_user.email,
-        "password": "TestPassword123!"
+        "password": "TestPassword123!"  # pragma: allowlist secret
     }
     response = client.post("/auth/login", json=login_data)
     tokens = response.json()
@@ -182,7 +182,7 @@ def admin_client(client, admin_user) -> TestClient:
     # Login to get tokens
     login_data = {
         "email": admin_user.email,
-        "password": "AdminPassword123!"
+        "password": "AdminPassword123!"  # pragma: allowlist secret
     }
     response = client.post("/auth/login", json=login_data)
     tokens = response.json()
@@ -277,7 +277,7 @@ class TestUtils:
         """Create a test user with custom attributes."""
         default_data = {
             "email": f"test{kwargs.get('id', 1)}@example.com",
-            "password": "TestPassword123!",
+            "password": "TestPassword123!",  # pragma: allowlist secret
             "full_name": f"Test User {kwargs.get('id', 1)}",
             "age": 30,
             "medical_conditions": "None",

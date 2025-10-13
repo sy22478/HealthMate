@@ -3,14 +3,14 @@ from typing import List, Optional
 import os
 
 class Settings(BaseSettings):
-    # Core settings
-    openai_api_key: str
-    pinecone_api_key: str
-    pinecone_environment: str
-    pinecone_index_name: str
-    postgres_uri: str
-    secret_key: str
-    
+    # Core settings - provide defaults for test environment
+    openai_api_key: str = "dummy_key"
+    pinecone_api_key: str = "dummy_key"
+    pinecone_environment: str = "dummy_env"
+    pinecone_index_name: str = "dummy_index"
+    postgres_uri: str = "postgresql://localhost:5432/test_db"
+    secret_key: str = "test_secret_key"
+
     # Security settings
     environment: str = "development"
     debug: bool = False

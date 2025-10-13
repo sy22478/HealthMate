@@ -8,13 +8,13 @@ import sys
 
 def setup_test_environment():
     """Set up test environment variables."""
-    # Set required environment variables (use CI values if available, otherwise use defaults)
-    os.environ["OPENAI_API_KEY"] = os.environ.get("OPENAI_API_KEY", "test-openai-key")
-    os.environ["PINECONE_API_KEY"] = os.environ.get("PINECONE_API_KEY", "test-pinecone-key")
-    os.environ["PINECONE_ENVIRONMENT"] = os.environ.get("PINECONE_ENVIRONMENT", "test-environment")
-    os.environ["PINECONE_INDEX_NAME"] = os.environ.get("PINECONE_INDEX_NAME", "test-index")
-    os.environ["POSTGRES_URI"] = os.environ.get("POSTGRES_URI", "sqlite:///./test.db")
-    os.environ["SECRET_KEY"] = os.environ.get("SECRET_KEY", "test-secret-key-for-testing-only")
+    # Set required environment variables with HEALTHMATE_ prefix (use CI values if available, otherwise use defaults)
+    os.environ["HEALTHMATE_OPENAI_API_KEY"] = os.environ.get("HEALTHMATE_OPENAI_API_KEY", "test-openai-key")
+    os.environ["HEALTHMATE_PINECONE_API_KEY"] = os.environ.get("HEALTHMATE_PINECONE_API_KEY", "test-pinecone-key")
+    os.environ["HEALTHMATE_PINECONE_ENVIRONMENT"] = os.environ.get("HEALTHMATE_PINECONE_ENVIRONMENT", "test-environment")
+    os.environ["HEALTHMATE_PINECONE_INDEX_NAME"] = os.environ.get("HEALTHMATE_PINECONE_INDEX_NAME", "test-index")
+    os.environ["HEALTHMATE_POSTGRES_URI"] = os.environ.get("HEALTHMATE_POSTGRES_URI", "sqlite:///./test.db")
+    os.environ["HEALTHMATE_SECRET_KEY"] = os.environ.get("HEALTHMATE_SECRET_KEY", "test-secret-key-for-testing-only")
     os.environ["HEALTHMATE_ENVIRONMENT"] = os.environ.get("HEALTHMATE_ENVIRONMENT", "test")
     
     print("✅ Test environment variables set successfully")
