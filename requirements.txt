@@ -3,7 +3,7 @@ uvicorn
 sqlalchemy
 psycopg2-binary
 openai
-pinecone-client
+pinecone-client==5.0.0
 langchain
 streamlit
 python-jose

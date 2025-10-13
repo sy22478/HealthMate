@@ -14,12 +14,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      POSTGRES_URI: postgresql://postgres:test_password@localhost:5432/test_db  # pragma: allowlist secret
-      SECRET_KEY: test_secret_key_for_ci_cd  # pragma: allowlist secret
-      OPENAI_API_KEY: dummy_key  # pragma: allowlist secret
-      PINECONE_API_KEY: dummy_key  # pragma: allowlist secret
-      PINECONE_ENVIRONMENT: dummy_env  # pragma: allowlist secret
-      PINECONE_INDEX_NAME: dummy_index  # pragma: allowlist secret
+      HEALTHMATE_POSTGRES_URI: postgresql://postgres:test_password@localhost:5432/test_db  # pragma: allowlist secret
+      HEALTHMATE_SECRET_KEY: test_secret_key_for_ci_cd  # pragma: allowlist secret
+      HEALTHMATE_OPENAI_API_KEY: dummy_key  # pragma: allowlist secret
+      HEALTHMATE_PINECONE_API_KEY: dummy_key  # pragma: allowlist secret
+      HEALTHMATE_PINECONE_ENVIRONMENT: dummy_env  # pragma: allowlist secret
+      HEALTHMATE_PINECONE_INDEX_NAME: dummy_index  # pragma: allowlist secret
       HEALTHMATE_ENVIRONMENT: test
     services:
       postgres:
@@ -55,9 +55,12 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
+        cd healthchat-rag
         pip install -r requirements.txt
-        pip install pytest pytest-cov pytest-asyncio httpx
+        pip install pytest pytest-cov pytest-asyncio httpx pytest-xdist
         pip install python-json-logger==2.0.7
+        pip install spacy
+        python -m spacy download en_core_web_sm
         pip show python-json-logger
         python -c "import pythonjsonlogger; print('pythonjsonlogger imported successfully')"
         pip list | grep python
@@ -68,21 +71,21 @@ jobs:
     - name: Verify environment variables
       run: |
         echo "Environment variables are set at job level"
-        echo "POSTGRES_URI: $POSTGRES_URI"
-        echo "SECRET_KEY: $SECRET_KEY"
-        echo "OPENAI_API_KEY: $OPENAI_API_KEY"
+        echo "HEALTHMATE_POSTGRES_URI: $HEALTHMATE_POSTGRES_URI"
+        echo "HEALTHMATE_SECRET_KEY: $HEALTHMATE_SECRET_KEY"
+        echo "HEALTHMATE_OPENAI_API_KEY: $HEALTHMATE_OPENAI_API_KEY"
 
     - name: Run database migrations
       run: |
         cd healthchat-rag
         python -c "
         import os
-        os.environ.setdefault('POSTGRES_URI', '${{ env.POSTGRES_URI }}')
-        os.environ.setdefault('SECRET_KEY', '${{ env.SECRET_KEY }}')
-        os.environ.setdefault('OPENAI_API_KEY', '${{ env.OPENAI_API_KEY }}')
-        os.environ.setdefault('PINECONE_API_KEY', '${{ env.PINECONE_API_KEY }}')
-        os.environ.setdefault('PINECONE_ENVIRONMENT', '${{ env.PINECONE_ENVIRONMENT }}')
-        os.environ.setdefault('PINECONE_INDEX_NAME', '${{ env.PINECONE_INDEX_NAME }}')
+        os.environ.setdefault('HEALTHMATE_POSTGRES_URI', '${{ env.HEALTHMATE_POSTGRES_URI }}')
+        os.environ.setdefault('HEALTHMATE_SECRET_KEY', '${{ env.HEALTHMATE_SECRET_KEY }}')
+        os.environ.setdefault('HEALTHMATE_OPENAI_API_KEY', '${{ env.HEALTHMATE_OPENAI_API_KEY }}')
+        os.environ.setdefault('HEALTHMATE_PINECONE_API_KEY', '${{ env.HEALTHMATE_PINECONE_API_KEY }}')
+        os.environ.setdefault('HEALTHMATE_PINECONE_ENVIRONMENT', '${{ env.HEALTHMATE_PINECONE_ENVIRONMENT }}')
+        os.environ.setdefault('HEALTHMATE_PINECONE_INDEX_NAME', '${{ env.HEALTHMATE_PINECONE_INDEX_NAME }}')
         from app.database import engine
         from app.models.user import Base
         Base.metadata.create_all(bind=engine)
@@ -91,25 +94,11 @@ jobs:
     - name: Test environment setup
       run: |
         cd healthchat-rag
-        export POSTGRES_URI="$POSTGRES_URI"
-        export SECRET_KEY="$SECRET_KEY"
-        export OPENAI_API_KEY="$OPENAI_API_KEY"
-        export PINECONE_API_KEY="$PINECONE_API_KEY"
-        export PINECONE_ENVIRONMENT="$PINECONE_ENVIRONMENT"
-        export PINECONE_INDEX_NAME="$PINECONE_INDEX_NAME"
-        export HEALTHMATE_ENVIRONMENT="$HEALTHMATE_ENVIRONMENT"
         python test_setup.py
 
     - name: Run tests with coverage
       run: |
         cd healthchat-rag
-        export POSTGRES_URI="$POSTGRES_URI"
-        export SECRET_KEY="$SECRET_KEY"
-        export OPENAI_API_KEY="$OPENAI_API_KEY"
-        export PINECONE_API_KEY="$PINECONE_API_KEY"
-        export PINECONE_ENVIRONMENT="$PINECONE_ENVIRONMENT"
-        export PINECONE_INDEX_NAME="$PINECONE_INDEX_NAME"
-        export HEALTHMATE_ENVIRONMENT="$HEALTHMATE_ENVIRONMENT"
         pytest tests/ --cov=app --cov-report=term-missing --cov-report=xml
 
     - name: Upload coverage to Codecov
